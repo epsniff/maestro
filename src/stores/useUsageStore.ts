@@ -6,8 +6,8 @@ import {
   type TamagotchiMood,
 } from "@/lib/usageParser";
 
-/** Polling interval for usage updates (60 seconds). */
-const POLL_INTERVAL_MS = 60_000;
+/** Polling interval for usage updates (15 minutes). */
+const POLL_INTERVAL_MS = 15 * 60_000;
 
 interface UsageState {
   /** Raw usage data from backend. */
