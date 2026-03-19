@@ -594,13 +594,25 @@ function ProjectContextSection() {
 
 function SessionsSection() {
   const [expanded, setExpanded] = useState(true);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState("");
   const allSessions = useSessionStore((s) => s.sessions);
+  const renameSession = useSessionStore((s) => s.renameSession);
   const tabs = useWorkspaceStore((s) => s.tabs);
   const activeTab = tabs.find((t) => t.active);
   const activeProjectPath = activeTab?.projectPath ?? "";
 
   // Filter sessions to only show those belonging to the active project
   const sessions = allSessions.filter((s) => s.project_path === activeProjectPath);
+
+  const commitRename = useCallback((sessionId: number, value: string) => {
+    renameSession(sessionId, value.trim());
+    setEditingId(null);
+  }, [renameSession]);
+
+  const cancelRename = useCallback(() => {
+    setEditingId(null);
+  }, []);
 
   return (
     <div className={cardClass}>
@@ -636,7 +648,30 @@ function SessionsSection() {
               >
                 <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT_CLASS[s.status]}`} />
                 <Bot size={12} className="text-maestro-purple shrink-0" />
-                <span className="flex-1 font-medium">#{s.id}</span>
+                {editingId === s.id ? (
+                  <input
+                    autoFocus
+                    maxLength={50}
+                    className="flex-1 bg-maestro-bg border border-maestro-border rounded px-1 py-0 text-xs font-medium text-maestro-text outline-none focus:border-maestro-accent"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitRename(s.id, editValue);
+                      if (e.key === "Escape") cancelRename();
+                    }}
+                    onBlur={() => commitRename(s.id, editValue)}
+                  />
+                ) : (
+                  <span
+                    className="flex-1 font-medium cursor-pointer truncate"
+                    onDoubleClick={() => {
+                      setEditingId(s.id);
+                      setEditValue(s.name || `#${s.id}`);
+                    }}
+                  >
+                    {s.name || `#${s.id}`}
+                  </span>
+                )}
                 <span className="text-[10px] text-maestro-muted">{STATUS_LABEL[s.status]}</span>
               </div>
             ))
@@ -1515,7 +1550,7 @@ function AgentSessionsSection() {
             >
               <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT_CLASS[s.status]}`} />
               <span className="flex-1 truncate">
-                <span className="font-medium">#{s.id}</span>{" "}
+                <span className="font-medium">{s.name || `#${s.id}`}</span>{" "}
                 <span className="text-maestro-muted">{s.mode}</span>{" "}
                 <span className="text-maestro-muted">-</span>{" "}
                 <span className="text-maestro-muted">{STATUS_LABEL[s.status]}</span>

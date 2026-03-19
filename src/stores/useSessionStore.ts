@@ -43,6 +43,8 @@ export interface SessionConfig {
   needsInputPrompt?: string;
   /** Timestamp of the last MCP-driven status update (used by activity heuristic). */
   lastMcpUpdateTime?: number;
+  /** User-defined display name (frontend-only, not persisted to backend). */
+  name?: string;
 }
 
 /** Shape of the Tauri `session-status-changed` event payload. */
@@ -74,6 +76,7 @@ interface SessionState {
   removeSessionsForProject: (projectPath: string) => Promise<SessionConfig[]>;
   updateSession: (sessionId: number, updates: Partial<SessionConfig>) => void;
   getSessionsByProject: (projectPath: string) => SessionConfig[];
+  renameSession: (sessionId: number, name: string) => void;
   initListeners: () => Promise<UnlistenFn>;
 }
 
@@ -255,6 +258,15 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
       console.error("Failed to remove sessions for project:", err);
       return [];
     }
+  },
+
+  renameSession: (sessionId: number, name: string) => {
+    const trimmed = name.slice(0, 50);
+    set((state) => ({
+      sessions: state.sessions.map((s) =>
+        s.id === sessionId ? { ...s, name: trimmed || undefined } : s
+      ),
+    }));
   },
 
   getSessionsByProject: (projectPath: string) => {

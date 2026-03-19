@@ -21,6 +21,7 @@ export type AIProvider = "claude" | "gemini" | "codex" | "opencode" | "plain";
 
 interface TerminalHeaderProps {
   sessionId: number;
+  sessionName?: string;
   provider?: AIProvider;
   status?: SessionStatus;
   mcpCount?: number;
@@ -68,6 +69,7 @@ const providerConfig: Record<AIProvider, { icon: IconComponent; label: string }>
 
 export const TerminalHeader = memo(function TerminalHeader({
   sessionId,
+  sessionName,
   provider = "claude",
   status = "idle",
   mcpCount = 1,
@@ -217,7 +219,7 @@ export const TerminalHeader = memo(function TerminalHeader({
 
         {/* Session label */}
         <span className={`shrink-0 font-medium text-maestro-text ${adaptive.sessionLabelSize}`}>
-          {providerLabel} #{sessionId}
+          {sessionName || `${providerLabel} #${sessionId}`}
         </span>
 
         {/* MCP badge */}

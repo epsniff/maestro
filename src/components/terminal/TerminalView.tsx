@@ -133,6 +133,7 @@ export const TerminalView = memo(function TerminalView({
         branch: sess.branch,
         statusMessage: sess.statusMessage,
         needsInputPrompt: sess.needsInputPrompt,
+        name: sess.name,
       };
     })
   );
@@ -684,6 +685,7 @@ export const TerminalView = memo(function TerminalView({
       {/* Rich header bar */}
       <TerminalHeader
         sessionId={sessionId}
+        sessionName={sessionData?.name}
         provider={effectiveProvider}
         status={effectiveStatus}
         statusMessage={sessionData?.statusMessage || sessionData?.needsInputPrompt}
