@@ -32,6 +32,7 @@ interface TerminalHeaderProps {
   isWorktree?: boolean;
   onKill: (sessionId: number) => void;
   onLaunch?: () => void;
+  onRename?: (sessionId: number, name: string) => void;
   terminalCount?: number;
   isZoomed?: boolean;
   onToggleZoom?: () => void;
@@ -80,6 +81,7 @@ export const TerminalHeader = memo(function TerminalHeader({
   isWorktree = false,
   onKill,
   onLaunch,
+  onRename,
   terminalCount = 1,
   isZoomed = false,
   onToggleZoom,
@@ -89,6 +91,24 @@ export const TerminalHeader = memo(function TerminalHeader({
   const { icon: ProviderIcon, label: providerLabel } = providerConfig[provider];
   const [showZoomMenu, setShowZoomMenu] = useState(false);
   const zoomMenuRef = useRef<HTMLDivElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
+
+  const startRename = useCallback(() => {
+    if (!onRename) return;
+    setEditValue(sessionName || `${providerLabel} #${sessionId}`);
+    setIsEditing(true);
+  }, [onRename, sessionName, providerLabel, sessionId]);
+
+  const commitRename = useCallback(() => {
+    const trimmed = editValue.trim();
+    onRename?.(sessionId, trimmed);
+    setIsEditing(false);
+  }, [editValue, onRename, sessionId]);
+
+  const cancelRename = useCallback(() => {
+    setIsEditing(false);
+  }, []);
 
   const handleZoomPreset = useCallback(
     (level: number) => {
@@ -218,9 +238,32 @@ export const TerminalHeader = memo(function TerminalHeader({
         </button>
 
         {/* Session label */}
-        <span className={`shrink-0 font-medium text-maestro-text ${adaptive.sessionLabelSize}`}>
-          {sessionName || `${providerLabel} #${sessionId}`}
-        </span>
+        {isEditing ? (
+          <input
+            autoFocus
+            maxLength={50}
+            className={`shrink-0 bg-maestro-bg border border-maestro-border rounded px-1 py-0 font-medium text-maestro-text outline-none focus:border-maestro-accent ${adaptive.sessionLabelSize}`}
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitRename();
+              if (e.key === "Escape") cancelRename();
+            }}
+            onBlur={() => commitRename()}
+          />
+        ) : (
+          <span
+            className={`shrink-0 font-medium text-maestro-text ${adaptive.sessionLabelSize} ${onRename ? "cursor-pointer" : ""}`}
+            onDoubleClick={startRename}
+            onContextMenu={(e) => {
+              if (!onRename) return;
+              e.preventDefault();
+              startRename();
+            }}
+          >
+            {sessionName || `${providerLabel} #${sessionId}`}
+          </span>
+        )}
 
         {/* MCP badge */}
         {(adaptive.showAllElements || terminalCount <= 6) && (

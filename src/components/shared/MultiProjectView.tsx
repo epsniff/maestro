@@ -5,6 +5,7 @@ import { TerminalGrid, type TerminalGridHandle } from "../terminal/TerminalGrid"
 
 interface MultiProjectViewProps {
   onSessionCountChange?: (tabId: string, slotCount: number, launchedCount: number) => void;
+  onZoomChange?: (isZoomed: boolean) => void;
 }
 
 export interface MultiProjectViewHandle {
@@ -22,7 +23,7 @@ export interface MultiProjectViewHandle {
  * uses a ZStack to preserve terminal NSView state across project switches.
  */
 export const MultiProjectView = forwardRef<MultiProjectViewHandle, MultiProjectViewProps>(
-  function MultiProjectView({ onSessionCountChange }, ref) {
+  function MultiProjectView({ onSessionCountChange, onZoomChange }, ref) {
   const tabs = useWorkspaceStore((s) => s.tabs);
   const setSessionsLaunched = useWorkspaceStore((s) => s.setSessionsLaunched);
   const setSelectedRepo = useWorkspaceStore((s) => s.setSelectedRepo);
@@ -98,6 +99,19 @@ export const MultiProjectView = forwardRef<MultiProjectViewHandle, MultiProjectV
     return callbacks;
   }, [tabs, setSelectedRepo]);
 
+  // Stable zoom change callbacks per tab (only active tab's zoom matters)
+  const zoomChangeCallbacks = useMemo(() => {
+    const callbacks = new Map<string, (isZoomed: boolean) => void>();
+    for (const tab of tabs) {
+      callbacks.set(tab.id, (isZoomed: boolean) => {
+        if (tab.active) {
+          onZoomChange?.(isZoomed);
+        }
+      });
+    }
+    return callbacks;
+  }, [tabs, onZoomChange]);
+
   // Stable ref setters per tab
   const gridRefSetters = useMemo(() => {
     const setters = new Map<string, (handle: TerminalGridHandle | null) => void>();
@@ -153,6 +167,7 @@ export const MultiProjectView = forwardRef<MultiProjectViewHandle, MultiProjectV
               isActive={tab.active}
               onSessionCountChange={sessionCountChangeCallbacks.get(tab.id)}
               onAllSessionsClosed={allSessionsClosedCallbacks.get(tab.id)}
+              onZoomChange={zoomChangeCallbacks.get(tab.id)}
             />
           ) : (
             <IdleLandingView onAdd={launchCallbacks.get(tab.id)!} />

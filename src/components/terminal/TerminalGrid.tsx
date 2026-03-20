@@ -142,6 +142,7 @@ interface TerminalGridProps {
   isActive?: boolean;
   onSessionCountChange?: (slotCount: number, launchedCount: number) => void;
   onAllSessionsClosed?: () => void;
+  onZoomChange?: (isZoomed: boolean) => void;
 }
 
 /**
@@ -178,7 +179,7 @@ function PlaceholderLeaf({ container, isZoomed }: {
 }
 
 export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(function TerminalGrid(
-  { projectPath, repoPath, repositories, workspaceType, onRepoChange, tabId, preserveOnHide = false, isActive = true, onSessionCountChange, onAllSessionsClosed },
+  { projectPath, repoPath, repositories, workspaceType, onRepoChange, tabId, preserveOnHide = false, isActive = true, onSessionCountChange, onAllSessionsClosed, onZoomChange },
   ref,
 ) {
   // Use repoPath for git operations, falling back to projectPath
@@ -214,6 +215,11 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
 
   // Track which terminal slot is zoomed (takes full screen)
   const [zoomedSlotId, setZoomedSlotId] = useState<string | null>(null);
+
+  // Notify parent when zoom state changes
+  useEffect(() => {
+    onZoomChange?.(zoomedSlotId !== null);
+  }, [zoomedSlotId, onZoomChange]);
 
   // Persistent container divs for DOM reparenting (preserves xterm instances across zoom)
   const terminalContainersRef = useRef<Map<string, HTMLDivElement>>(new Map());

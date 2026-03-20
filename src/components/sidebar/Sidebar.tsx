@@ -663,8 +663,14 @@ function SessionsSection() {
                   />
                 ) : (
                   <span
-                    className="flex-1 font-medium cursor-pointer truncate"
-                    onDoubleClick={() => {
+                    className="flex-1 font-medium cursor-pointer truncate select-text"
+                    onDoubleClick={(e) => {
+                      e.preventDefault();
+                      setEditingId(s.id);
+                      setEditValue(s.name || `#${s.id}`);
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
                       setEditingId(s.id);
                       setEditValue(s.name || `#${s.id}`);
                     }}

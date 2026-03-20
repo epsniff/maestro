@@ -52,6 +52,7 @@ function App() {
   const [gitPanelOpen, setGitPanelOpen] = useState(false);
   const [sessionCounts, setSessionCounts] = useState<Map<string, { slotCount: number; launchedCount: number }>>(new Map());
   const [isStoppingAll, setIsStoppingAll] = useState(false);
+  const [isSessionZoomed, setIsSessionZoomed] = useState(false);
   const [currentBranch, setCurrentBranch] = useState<string | undefined>(undefined);
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem("maestro-theme");
@@ -265,8 +266,8 @@ function App() {
 
         {/* Right column: top bar + content + bottom bar */}
         <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Top bar row - includes git panel header when open */}
-          <div className="flex h-10 shrink-0 bg-maestro-bg">
+          {/* Top bar row - hidden when a session is zoomed for more screen space */}
+          <div className={`flex h-10 shrink-0 bg-maestro-bg ${isSessionZoomed ? "hidden" : ""}`}>
             {/* TopBar takes flex-1 to fill available space */}
             <TopBar
               sidebarOpen={sidebarOpen}
@@ -326,6 +327,7 @@ function App() {
               <MultiProjectView
                 ref={multiProjectRef}
                 onSessionCountChange={handleSessionCountChange}
+                onZoomChange={setIsSessionZoomed}
               />
             </main>
 

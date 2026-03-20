@@ -122,6 +122,7 @@ export const TerminalView = memo(function TerminalView({
   isZoomed = false,
   onToggleZoom,
 }: TerminalViewProps) {
+  const renameSession = useSessionStore((s) => s.renameSession);
   const sessionData = useSessionStore(
     useShallow((s) => {
       const sess = s.sessions.find((x) => x.id === sessionId);
@@ -736,6 +737,7 @@ export const TerminalView = memo(function TerminalView({
         branchName={effectiveBranch}
         isWorktree={isWorktree}
         onKill={handleKill}
+        onRename={renameSession}
         terminalCount={terminalCount}
         isZoomed={isZoomed}
         onToggleZoom={onToggleZoom}
