@@ -9,6 +9,7 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import "@xterm/xterm/css/xterm.css";
 
+import { ChevronDown } from "lucide-react";
 import { QuickActionsManager } from "@/components/quickactions/QuickActionsManager";
 import { ActivityFeed } from "@/components/session/ActivityFeed";
 import { isGitWorktree } from "@/lib/git";
@@ -177,6 +178,8 @@ export const TerminalView = memo(function TerminalView({
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const isAtBottomRef = useRef(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   // Quick actions manager modal state
   const [showQuickActionsManager, setShowQuickActionsManager] = useState(false);
@@ -234,10 +237,14 @@ export const TerminalView = memo(function TerminalView({
 
       // Refit terminal to recalculate cell dimensions
       requestAnimationFrame(() => {
+        const wasAtBottom = isAtBottomRef.current;
         try {
           fitAddonRef.current?.fit();
         } catch {
           // Ignore fit errors during transition
+        }
+        if (wasAtBottom) {
+          termRef.current?.scrollToBottom();
         }
       });
     }
@@ -331,6 +338,8 @@ export const TerminalView = memo(function TerminalView({
 
     let dataDisposable: { dispose: () => void } | null = null;
     let resizeDisposable: { dispose: () => void } | null = null;
+    let scrollDisposable: { dispose: () => void } | null = null;
+    let writeParsedDisposable: { dispose: () => void } | null = null;
     let resizeObserver: ResizeObserver | null = null;
     let pasteHandler: ((e: Event) => void) | null = null;
     let unlistenDragDrop: (() => void) | null = null;
@@ -353,6 +362,7 @@ export const TerminalView = memo(function TerminalView({
         theme: toXtermTheme(initialTheme),
         allowProposedApi: true,
         scrollback: isLinux ? 2000 : 10000,
+        scrollOnUserInput: true,
         tabStopWidth: 8,
       });
 
@@ -394,6 +404,28 @@ export const TerminalView = memo(function TerminalView({
           fitAddon?.fit();
         } catch {
           // Container may not be sized yet
+        }
+      });
+
+      // --- Sticky scroll-to-bottom ---
+      const checkIsAtBottom = (): boolean => {
+        if (!term) return true;
+        const buffer = term.buffer.active;
+        return buffer.baseY - buffer.viewportY <= 5;
+      };
+
+      scrollDisposable = term.onScroll(() => {
+        const atBottom = checkIsAtBottom();
+        isAtBottomRef.current = atBottom;
+        setShowScrollToBottom((prev) => {
+          const shouldShow = !atBottom;
+          return prev === shouldShow ? prev : shouldShow;
+        });
+      });
+
+      writeParsedDisposable = term.onWriteParsed(() => {
+        if (isAtBottomRef.current) {
+          term?.scrollToBottom();
         }
       });
 
@@ -479,6 +511,11 @@ export const TerminalView = memo(function TerminalView({
       });
 
       dataDisposable = term.onData((data) => {
+        // Re-engage auto-scroll on user input
+        isAtBottomRef.current = true;
+        setShowScrollToBottom(false);
+        term?.scrollToBottom();
+
         if (pendingCompositionData !== null) {
           const correctData = pendingCompositionData;
           pendingCompositionData = null;
@@ -630,10 +667,14 @@ export const TerminalView = memo(function TerminalView({
       resizeObserver = new ResizeObserver(() => {
         requestAnimationFrame(() => {
           if (!disposed && fitAddon) {
+            const wasAtBottom = isAtBottomRef.current;
             try {
               fitAddon.fit();
             } catch {
               // Container may have zero dimensions during layout transitions
+            }
+            if (wasAtBottom) {
+              term?.scrollToBottom();
             }
           }
         });
@@ -662,6 +703,8 @@ export const TerminalView = memo(function TerminalView({
       if (unlistenDragDrop) unlistenDragDrop();
       dataDisposable?.dispose();
       resizeDisposable?.dispose();
+      scrollDisposable?.dispose();
+      writeParsedDisposable?.dispose();
       if (unlisten) unlisten();
       term?.dispose();
       termRef.current = null;
@@ -727,7 +770,25 @@ export const TerminalView = memo(function TerminalView({
       </div>
 
       {/* xterm.js container - always mounted but hidden when activity tab is active */}
-      <div ref={containerRef} className={`flex-1 overflow-hidden ${activeTab !== "terminal" ? "hidden" : ""}`} />
+      <div className={`relative flex-1 overflow-hidden ${activeTab !== "terminal" ? "hidden" : ""}`}>
+        <div ref={containerRef} className="absolute inset-0" />
+        <button
+          type="button"
+          className={`absolute bottom-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-neutral-700/80 text-neutral-300 shadow-lg backdrop-blur-sm transition-all duration-200 hover:bg-neutral-600 ${
+            showScrollToBottom && activeTab === "terminal"
+              ? "opacity-100"
+              : "pointer-events-none opacity-0"
+          }`}
+          onClick={() => {
+            isAtBottomRef.current = true;
+            setShowScrollToBottom(false);
+            termRef.current?.scrollToBottom();
+          }}
+          aria-label="Scroll to bottom"
+        >
+          <ChevronDown size={18} />
+        </button>
+      </div>
 
       {/* Activity feed - shown when activity tab is active */}
       {activeTab === "activity" && (
