@@ -68,3 +68,4 @@ website/.jekyll-metadata
 
 # roam code context index
 .roam/
+.worktrees

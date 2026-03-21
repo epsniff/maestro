@@ -381,21 +381,16 @@ export const TerminalView = memo(function TerminalView({
       term.open(container);
 
       // GPU-accelerated rendering (must be loaded after open())
-      // Try WebGL first, fall back to Canvas2D (much faster than DOM on Linux)
+      // Try WebGL, fall back to DOM renderer
       try {
         const webglAddon = new WebglAddon();
         webglAddon.onContextLoss(() => {
           webglAddon.dispose();
-          try {
-            term?.loadAddon(new CanvasAddon());
-          } catch { /* DOM renderer as final fallback */ }
+          // DOM renderer as fallback (canvas addon removed in xterm 6)
         });
         term.loadAddon(webglAddon);
       } catch {
-        // WebGL not available — use Canvas2D renderer
-        try {
-          term.loadAddon(new CanvasAddon());
-        } catch { /* DOM renderer as final fallback */ }
+        // WebGL not available — DOM renderer as fallback
       }
 
       termRef.current = term;
