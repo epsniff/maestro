@@ -8,6 +8,7 @@ import {
   FolderGit2,
   FolderOpen,
   GitBranch,
+  GripVertical,
   Loader2,
   Minimize,
   Package,
@@ -23,6 +24,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useDraggable } from "@dnd-kit/core";
 import { OpenCodeIcon, type IconComponent } from "@/components/icons";
 
 import type { BranchWithWorktreeStatus } from "@/lib/git";
@@ -141,6 +143,11 @@ export function PreLaunchCard({
   isZoomed = false,
   onToggleZoom,
 }: PreLaunchCardProps) {
+  // Drag handle for reordering panes
+  const { attributes: dragAttributes, listeners: dragListeners, setNodeRef: setDragRef, isDragging: isDragActive } = useDraggable({
+    id: slot.id,
+  });
+
   const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [mcpDropdownOpen, setMcpDropdownOpen] = useState(false);
@@ -352,12 +359,23 @@ export function PreLaunchCard({
   const selectedRepoName = selectedRepo?.name ?? getRepoDisplayName(selectedRepoPath ?? "");
 
   return (
-    <div className="content-dark terminal-cell flex h-full flex-col items-center justify-center bg-maestro-bg p-4">
+    <div className={`content-dark terminal-cell flex h-full flex-col items-center justify-center bg-maestro-bg p-4 ${isDragActive ? "opacity-50" : ""}`}>
       {/* Card content */}
       <div className="flex w-full max-w-xs flex-col gap-4">
         {/* Header with remove button */}
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-maestro-text">Configure Session</span>
+          <div className="flex items-center gap-1.5">
+            <div
+              ref={setDragRef}
+              {...dragListeners}
+              {...dragAttributes}
+              className="shrink-0 cursor-grab active:cursor-grabbing text-maestro-muted/40 hover:text-maestro-muted transition-colors"
+              title="Drag to reorder"
+            >
+              <GripVertical size={14} />
+            </div>
+            <span className="text-sm font-medium text-maestro-text">Configure Session</span>
+          </div>
           <div className="flex items-center gap-1">
             {/* Zoom toggle button */}
             {onToggleZoom && (

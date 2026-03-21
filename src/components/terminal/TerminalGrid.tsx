@@ -1,6 +1,16 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+
 import { invoke } from "@tauri-apps/api/core";
 import { ask } from "@tauri-apps/plugin-dialog";
 
@@ -41,7 +51,7 @@ import type { AiMode } from "@/stores/useSessionStore";
 import { useWorkspaceStore, type RepositoryInfo, type WorkspaceType } from "@/stores/useWorkspaceStore";
 import { PreLaunchCard, type SessionSlot } from "./PreLaunchCard";
 import { SplitPaneView } from "./SplitPaneView";
-import { createLeaf, splitLeaf, removeLeaf, updateRatio, collectSlotIds, findSiblingSlotId, buildGridTree, type TreeNode, type SplitDirection } from "./splitTree";
+import { createLeaf, splitLeaf, removeLeaf, updateRatio, collectSlotIds, findSiblingSlotId, buildGridTree, swapLeaves, type TreeNode, type SplitDirection } from "./splitTree";
 import { TerminalView } from "./TerminalView";
 
 /** Stable empty arrays to avoid infinite re-render loops in Zustand selectors. */
@@ -158,11 +168,22 @@ interface TerminalGridProps {
  * - When all sessions are killed by the user, an auto-respawn effect creates
  *   a fresh slot so the user is never left with an empty grid.
  */
-function PlaceholderLeaf({ container, isZoomed }: {
+function PlaceholderLeaf({ container, isZoomed, slotId, isDropTarget }: {
   container: HTMLDivElement;
   isZoomed: boolean;
+  slotId: string;
+  isDropTarget?: boolean;
 }) {
   const placeholderRef = useRef<HTMLDivElement>(null);
+  const { setNodeRef, isOver } = useDroppable({ id: slotId });
+
+  const combinedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      (placeholderRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      setNodeRef(node);
+    },
+    [setNodeRef],
+  );
 
   useEffect(() => {
     const placeholder = placeholderRef.current;
@@ -175,7 +196,12 @@ function PlaceholderLeaf({ container, isZoomed }: {
     };
   }, [container, isZoomed]);
 
-  return <div ref={placeholderRef} className="h-full w-full" />;
+  return (
+    <div
+      ref={combinedRef}
+      className={`h-full w-full relative ${isOver && isDropTarget ? "ring-2 ring-maestro-accent ring-inset rounded" : ""}`}
+    />
+  );
 }
 
 export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(function TerminalGrid(
@@ -1135,6 +1161,20 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
 
   useImperativeHandle(ref, () => ({ addSession, launchAll, refreshBranches }), [addSession, launchAll, refreshBranches]);
 
+  // DnD: sensors and drag-end handler for reordering panes
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+  const [activeDragSlotId, setActiveDragSlotId] = useState<string | null>(null);
+
+  const handlePaneDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveDragSlotId(null);
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setLayoutTree((prev) => swapLeaves(prev, active.id as string, over.id as string));
+    }
+  }, []);
+
   // Handle zoom toggle for a slot
   const handleToggleZoom = useCallback((slotId: string) => {
     setZoomedSlotId(prev => prev === slotId ? null : slotId);
@@ -1199,6 +1239,7 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
       <TerminalView
         key={slot.id}
         sessionId={slot.sessionId}
+        slotId={slot.id}
         isFocused={isThisZoomed || focusedSlotId === slot.id}
         isActive={isActive}
         onFocus={getFocusCallback(slot.id)}
@@ -1243,11 +1284,11 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
     return (
       <>
         {createPortal(content, container)}
-        <PlaceholderLeaf container={container} isZoomed={isThisZoomed} />
+        <PlaceholderLeaf container={container} isZoomed={isThisZoomed} slotId={slot.id} isDropTarget={activeDragSlotId !== null && activeDragSlotId !== slot.id} />
       </>
     );
   // eslint-disable-next-line react-hooks/exhaustive-deps -- Deps cover all render-affecting state
-  }, [slots, focusedSlotId, isActive, getFocusCallback, handleKill, handleToggleZoom, projectPath, branches, isLoadingBranches, isGitRepo, repositories, workspaceType, effectiveRepoPath, onRepoChange, mcpServers, skills, plugins, handleCreateBranch, updateSlotMode, updateSlotBranch, toggleSlotMcp, toggleSlotSkill, toggleSlotPlugin, selectAllMcp, unselectAllMcp, selectAllPlugins, unselectAllPlugins, launchSlot, removeSlot, zoomedSlotId, getOrCreateContainer]);
+  }, [slots, focusedSlotId, isActive, getFocusCallback, handleKill, handleToggleZoom, projectPath, branches, isLoadingBranches, isGitRepo, repositories, workspaceType, effectiveRepoPath, onRepoChange, mcpServers, skills, plugins, handleCreateBranch, updateSlotMode, updateSlotBranch, toggleSlotMcp, toggleSlotSkill, toggleSlotPlugin, selectAllMcp, unselectAllMcp, selectAllPlugins, unselectAllPlugins, launchSlot, removeSlot, zoomedSlotId, getOrCreateContainer, activeDragSlotId]);
 
   const handleRatioChange = useCallback((nodeId: string, ratio: number) => {
     setLayoutTree((prev) => updateRatio(prev, nodeId, ratio));
@@ -1319,12 +1360,20 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
 
         {/* SplitPaneView - invisible when zoomed (preserves layout/xterm state) */}
         <div className={`h-full p-2 ${isDragging ? "split-dragging" : ""} ${zoomedSlotId ? "invisible" : ""}`}>
-          <SplitPaneView
-            node={layoutTree}
-            renderLeaf={renderLeaf}
-            onRatioChange={handleRatioChange}
-            onDragStateChange={setIsDragging}
-          />
+          <DndContext
+            sensors={dndSensors}
+            collisionDetection={closestCenter}
+            onDragStart={(event) => setActiveDragSlotId(event.active.id as string)}
+            onDragEnd={handlePaneDragEnd}
+            onDragCancel={() => setActiveDragSlotId(null)}
+          >
+            <SplitPaneView
+              node={layoutTree}
+              renderLeaf={renderLeaf}
+              onRatioChange={handleRatioChange}
+              onDragStateChange={setIsDragging}
+            />
+          </DndContext>
         </div>
       </div>
     </div>

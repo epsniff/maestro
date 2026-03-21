@@ -1,4 +1,3 @@
-import { CanvasAddon } from "@xterm/addon-canvas";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
@@ -35,6 +34,7 @@ import { type AIProvider, type SessionStatus, TerminalHeader } from "./TerminalH
  */
 interface TerminalViewProps {
   sessionId: number;
+  slotId?: string;
   status?: SessionStatus;
   isFocused?: boolean;
   isActive?: boolean;
@@ -113,6 +113,7 @@ function cellStatusClass(status: SessionStatus): string {
  */
 export const TerminalView = memo(function TerminalView({
   sessionId,
+  slotId,
   status = "idle",
   isFocused = false,
   isActive = true,
@@ -732,6 +733,7 @@ export const TerminalView = memo(function TerminalView({
       {/* Rich header bar */}
       <TerminalHeader
         sessionId={sessionId}
+        slotId={slotId}
         sessionName={sessionData?.name}
         provider={effectiveProvider}
         status={effectiveStatus}

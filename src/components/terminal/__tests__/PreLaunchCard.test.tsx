@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import { DndContext } from "@dnd-kit/core";
 import { PreLaunchCard, type SessionSlot } from "../PreLaunchCard";
+
+/** Wraps component in DndContext required by useDraggable inside PreLaunchCard. */
+function renderWithDnd(ui: React.ReactElement) {
+  return render(<DndContext>{ui}</DndContext>);
+}
 
 describe("PreLaunchCard branch creation", () => {
   const makeSlot = (overrides?: Partial<SessionSlot>): SessionSlot => ({
@@ -55,7 +61,7 @@ describe("PreLaunchCard branch creation", () => {
 
   it("shows 'Create New Branch' button in branch dropdown when onCreateBranch is provided", () => {
     const onCreateBranch = vi.fn().mockResolvedValue(undefined);
-    render(<PreLaunchCard {...defaultProps} onCreateBranch={onCreateBranch} />);
+    renderWithDnd(<PreLaunchCard {...defaultProps} onCreateBranch={onCreateBranch} />);
 
     openBranchDropdown();
 
@@ -63,7 +69,7 @@ describe("PreLaunchCard branch creation", () => {
   });
 
   it("does NOT show 'Create New Branch' when onCreateBranch prop is omitted", () => {
-    render(<PreLaunchCard {...defaultProps} />);
+    renderWithDnd(<PreLaunchCard {...defaultProps} />);
 
     openBranchDropdown();
 
@@ -72,7 +78,7 @@ describe("PreLaunchCard branch creation", () => {
 
   it("clicking 'Create New Branch' shows input with 'Create' and 'Create & Select' buttons", () => {
     const onCreateBranch = vi.fn().mockResolvedValue(undefined);
-    render(<PreLaunchCard {...defaultProps} onCreateBranch={onCreateBranch} />);
+    renderWithDnd(<PreLaunchCard {...defaultProps} onCreateBranch={onCreateBranch} />);
 
     openBranchDropdown();
     fireEvent.click(screen.getByText("Create New Branch"));
@@ -84,7 +90,7 @@ describe("PreLaunchCard branch creation", () => {
 
   it("'Create' calls onCreateBranch(name, false) and does NOT call onBranchChange", async () => {
     const onCreateBranch = vi.fn().mockResolvedValue(undefined);
-    render(<PreLaunchCard {...defaultProps} onCreateBranch={onCreateBranch} />);
+    renderWithDnd(<PreLaunchCard {...defaultProps} onCreateBranch={onCreateBranch} />);
 
     openBranchDropdown();
     fireEvent.click(screen.getByText("Create New Branch"));
@@ -102,7 +108,7 @@ describe("PreLaunchCard branch creation", () => {
 
   it("'Create & Select' calls onCreateBranch(name, false) and then onBranchChange(name)", async () => {
     const onCreateBranch = vi.fn().mockResolvedValue(undefined);
-    render(<PreLaunchCard {...defaultProps} onCreateBranch={onCreateBranch} />);
+    renderWithDnd(<PreLaunchCard {...defaultProps} onCreateBranch={onCreateBranch} />);
 
     openBranchDropdown();
     fireEvent.click(screen.getByText("Create New Branch"));
@@ -121,7 +127,7 @@ describe("PreLaunchCard branch creation", () => {
 
   it("invalid branch name shows validation error", async () => {
     const onCreateBranch = vi.fn().mockResolvedValue(undefined);
-    render(<PreLaunchCard {...defaultProps} onCreateBranch={onCreateBranch} />);
+    renderWithDnd(<PreLaunchCard {...defaultProps} onCreateBranch={onCreateBranch} />);
 
     openBranchDropdown();
     fireEvent.click(screen.getByText("Create New Branch"));
@@ -140,7 +146,7 @@ describe("PreLaunchCard branch creation", () => {
 
   it("Escape closes the creation input", () => {
     const onCreateBranch = vi.fn().mockResolvedValue(undefined);
-    render(<PreLaunchCard {...defaultProps} onCreateBranch={onCreateBranch} />);
+    renderWithDnd(<PreLaunchCard {...defaultProps} onCreateBranch={onCreateBranch} />);
 
     openBranchDropdown();
     fireEvent.click(screen.getByText("Create New Branch"));
@@ -208,7 +214,7 @@ describe("PreLaunchCard AI Mode Selection", () => {
   }
 
   it("displays all AI providers in the mode dropdown", () => {
-    render(<PreLaunchCard {...defaultProps} />);
+    renderWithDnd(<PreLaunchCard {...defaultProps} />);
 
     openModeDropdown();
 
@@ -234,7 +240,7 @@ describe("PreLaunchCard AI Mode Selection", () => {
       vi.clearAllMocks();
 
       // Render fresh for each provider test
-      render(<PreLaunchCard {...defaultProps} />);
+      renderWithDnd(<PreLaunchCard {...defaultProps} />);
 
       openModeDropdown();
 

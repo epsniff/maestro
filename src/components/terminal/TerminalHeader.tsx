@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useDraggable } from "@dnd-kit/core";
 import {
   BrainCircuit,
   CheckCircle,
@@ -7,6 +8,7 @@ import {
   Expand,
   GitBranch,
   GitCompareArrows,
+  GripVertical,
   Minimize,
   Sparkles,
   Terminal,
@@ -21,6 +23,7 @@ export type AIProvider = "claude" | "gemini" | "codex" | "opencode" | "plain";
 
 interface TerminalHeaderProps {
   sessionId: number;
+  slotId?: string;
   sessionName?: string;
   provider?: AIProvider;
   status?: SessionStatus;
@@ -70,6 +73,7 @@ const providerConfig: Record<AIProvider, { icon: IconComponent; label: string }>
 
 export const TerminalHeader = memo(function TerminalHeader({
   sessionId,
+  slotId,
   sessionName,
   provider = "claude",
   status = "idle",
@@ -93,6 +97,12 @@ export const TerminalHeader = memo(function TerminalHeader({
   const zoomMenuRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
+
+  // Drag handle for reordering panes
+  const { attributes: dragAttributes, listeners: dragListeners, setNodeRef: setDragRef, isDragging } = useDraggable({
+    id: slotId ?? `session-${sessionId}`,
+    disabled: !slotId,
+  });
 
   const startRename = useCallback(() => {
     if (!onRename) return;
@@ -218,9 +228,22 @@ export const TerminalHeader = memo(function TerminalHeader({
   const adaptive = getAdaptiveClasses();
 
   return (
-    <div className={`no-select flex ${adaptive.headerHeight} shrink-0 items-center ${adaptive.gapSize} border-b border-maestro-border bg-maestro-surface px-2`}>
+    <div className={`no-select flex ${adaptive.headerHeight} shrink-0 items-center ${adaptive.gapSize} border-b border-maestro-border bg-maestro-surface px-2 ${isDragging ? "opacity-50" : ""}`}>
       {/* Left cluster */}
       <div className={`flex min-w-0 flex-1 items-center ${adaptive.gapSize}`}>
+        {/* Drag handle for reordering panes */}
+        {slotId && terminalCount > 1 && (
+          <div
+            ref={setDragRef}
+            {...dragListeners}
+            {...dragAttributes}
+            className="shrink-0 cursor-grab active:cursor-grabbing text-maestro-muted/40 hover:text-maestro-muted transition-colors"
+            title="Drag to reorder"
+          >
+            <GripVertical size={terminalCount <= 4 ? 14 : 12} />
+          </div>
+        )}
+
         {/* AI provider icon + dropdown */}
         <button
           type="button"

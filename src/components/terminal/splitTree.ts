@@ -181,6 +181,27 @@ export function buildGridTree(slotIds: string[]): TreeNode {
 }
 
 /**
+ * Swap two leaf slots in the tree.
+ * Returns the original tree unchanged if either slot is not found.
+ */
+export function swapLeaves(tree: TreeNode, slotIdA: string, slotIdB: string): TreeNode {
+  if (slotIdA === slotIdB) return tree;
+
+  if (tree.type === "leaf") {
+    if (tree.slotId === slotIdA) return { ...tree, slotId: slotIdB };
+    if (tree.slotId === slotIdB) return { ...tree, slotId: slotIdA };
+    return tree;
+  }
+
+  const [left, right] = tree.children;
+  const newLeft = swapLeaves(left, slotIdA, slotIdB);
+  const newRight = swapLeaves(right, slotIdA, slotIdB);
+
+  if (newLeft === left && newRight === right) return tree;
+  return { ...tree, children: [newLeft, newRight] };
+}
+
+/**
  * Find the sibling slot ID of a given slot in the tree.
  * Returns null if the slot is the root or not found.
  */
