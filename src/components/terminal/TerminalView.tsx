@@ -665,9 +665,12 @@ export const TerminalView = memo(function TerminalView({
           }
         });
 
-      resizeObserver = new ResizeObserver(() => {
+      resizeObserver = new ResizeObserver((entries) => {
         requestAnimationFrame(() => {
           if (!disposed && fitAddon) {
+            const entry = entries[0];
+            const { width, height } = entry.contentRect;
+            if (width === 0 || height === 0) return; // Skip fit when hidden
             const wasAtBottom = isAtBottomRef.current;
             try {
               fitAddon.fit();
