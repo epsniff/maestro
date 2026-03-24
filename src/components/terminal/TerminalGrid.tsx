@@ -48,6 +48,7 @@ import { useMcpStore } from "@/stores/useMcpStore";
 import { usePluginStore } from "@/stores/usePluginStore";
 import { useSessionStore } from "@/stores/useSessionStore";
 import type { AiMode } from "@/stores/useSessionStore";
+import { useTemplateStore } from "@/stores/useTemplateStore";
 import { useWorkspaceStore, type RepositoryInfo, type WorkspaceType } from "@/stores/useWorkspaceStore";
 import { PreLaunchCard, type SessionSlot } from "./PreLaunchCard";
 import { SplitPaneView } from "./SplitPaneView";
@@ -1174,6 +1175,60 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
   }, [mcpServers, skills, plugins, refreshBranches, orderedSlotIds]);
 
   useImperativeHandle(ref, () => ({ addSession, launchAll, refreshBranches }), [addSession, launchAll, refreshBranches]);
+
+  // Apply pending template from sidebar
+  const pendingTemplate = useTemplateStore((s) => s.pendingTemplate);
+  const clearPendingTemplate = useTemplateStore((s) => s.clearPendingTemplate);
+
+  useEffect(() => {
+    if (!pendingTemplate) return;
+
+    // Find the focused pre-launch slot (not yet launched)
+    let targetSlot = slotsRef.current.find(
+      (s) => s.id === focusedSlotId && s.sessionId === null,
+    );
+    // Fallback: any pre-launch slot
+    if (!targetSlot) {
+      targetSlot = slotsRef.current.find((s) => s.sessionId === null);
+    }
+
+    if (targetSlot) {
+      const targetId = targetSlot.id;
+      setSlots((prev) =>
+        prev.map((s) =>
+          s.id === targetId
+            ? {
+                ...s,
+                mode: pendingTemplate.mode,
+                enabledMcpServers: pendingTemplate.enabledMcpServers,
+                enabledSkills: pendingTemplate.enabledSkills,
+                enabledPlugins: pendingTemplate.enabledPlugins,
+              }
+            : s,
+        ),
+      );
+    } else {
+      // No pre-launch slot exists — create one and apply template
+      if (slotsRef.current.length < MAX_SESSIONS) {
+        const newSlot: SessionSlot = {
+          id: generateSlotId(),
+          mode: pendingTemplate.mode,
+          branch: null,
+          sessionId: null,
+          worktreePath: null,
+          worktreeWarning: null,
+          enabledMcpServers: pendingTemplate.enabledMcpServers,
+          enabledSkills: pendingTemplate.enabledSkills,
+          enabledPlugins: pendingTemplate.enabledPlugins,
+        };
+        setSlots((prev) => [...prev, newSlot]);
+        setLayoutTree(() => buildGridTree([...orderedSlotIds, newSlot.id]));
+        setFocusedSlotId(newSlot.id);
+      }
+    }
+
+    clearPendingTemplate();
+  }, [pendingTemplate, clearPendingTemplate, focusedSlotId, orderedSlotIds]);
 
   // DnD: sensors and drag-end handler for reordering panes
   const dndSensors = useSensors(
