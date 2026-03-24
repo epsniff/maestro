@@ -1302,17 +1302,27 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
           .map((id) => slots.find((s) => s.id === id))
           .filter(Boolean) as SessionSlot[];
         const zoomedIndex = zoomedOrderedSlots.findIndex(s => s.id === zoomedSlotId);
+        const sessions = useSessionStore.getState().sessions;
+
+        const getSlotLabel = (slot: SessionSlot, index: number): string => {
+          if (slot.sessionId !== null) {
+            const session = sessions.find((s) => s.id === slot.sessionId);
+            if (session?.name) return session.name;
+          }
+          return `Terminal ${index + 1}`;
+        };
 
         return (
           <div className="flex h-8 shrink-0 items-center gap-2 border-b border-maestro-border bg-maestro-surface px-3">
             <span className="text-[11px] font-medium uppercase tracking-wider text-maestro-muted">
-              Terminal {zoomedIndex + 1}/{zoomedOrderedSlots.length}
+              {getSlotLabel(zoomedOrderedSlots[zoomedIndex], zoomedIndex)} — {zoomedIndex + 1}/{zoomedOrderedSlots.length}
             </span>
             <div className="h-3.5 w-px bg-maestro-border" />
             <div className="flex gap-0.5">
               {zoomedOrderedSlots.map((slot, index) => {
                 const isSlotActive = slot.id === zoomedSlotId;
                 const hasSession = slot.sessionId !== null;
+                const label = getSlotLabel(slot, index);
                 return (
                   <button
                     key={slot.id}
@@ -1326,9 +1336,9 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
                         ? 'bg-maestro-accent/15 text-maestro-accent'
                         : 'text-maestro-muted hover:bg-maestro-card hover:text-maestro-text'
                     }`}
-                    title={isSlotActive ? 'Exit zoom' : `Switch to terminal ${index + 1}`}
+                    title={isSlotActive ? 'Exit zoom' : `Switch to ${label}`}
                   >
-                    <span className="font-mono text-xs">{index + 1}</span>
+                    <span className="text-xs">{label}</span>
                     {hasSession && (
                       <span className="h-1.5 w-1.5 rounded-full bg-maestro-green" />
                     )}
