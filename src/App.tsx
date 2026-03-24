@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { GitFork, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getDeduplicatedCurrentBranch } from "@/lib/git";
 import { killSession } from "@/lib/terminal";
@@ -7,21 +6,19 @@ import { useOpenProject } from "@/lib/useOpenProject";
 import { useFDAStore } from "@/stores/useFDAStore";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { useGitStore } from "./stores/useGitStore";
 import { useTerminalSettingsStore } from "./stores/useTerminalSettingsStore";
 import { useAppKeyboard } from "./hooks/useAppKeyboard";
 import { useSwipeNavigation } from "./hooks/useSwipeNavigation";
 import { useUpdateStore } from "./stores/useUpdateStore";
 import { initActivityListener, stopActivityListener } from "./stores/useActivityStore";
 import { UpdateNotification } from "./components/update/UpdateNotification";
-import { GitGraphPanel } from "./components/git/GitGraphPanel";
 import { BottomBar } from "./components/shared/BottomBar";
 import { FDADialog } from "./components/shared/FDADialog";
 import { MultiProjectView, type MultiProjectViewHandle } from "./components/shared/MultiProjectView";
 import { MAC_TITLE_BAR_INSET_PX, useMacTitleBarPadding } from "@/hooks/useMacTitleBarPadding";
 import { isMac } from "@/lib/platform";
 import { ProjectTabs } from "./components/shared/ProjectTabs";
-import { TopBar } from "./components/shared/TopBar";
+import { RightPanel } from "./components/shared/RightPanel";
 import { Sidebar } from "./components/sidebar/Sidebar";
 
 const DEFAULT_SESSION_COUNT = 6;
@@ -49,10 +46,9 @@ function App() {
   const retryAfterFDAGrant = useFDAStore((s) => s.retryAfterGrant);
   const multiProjectRef = useRef<MultiProjectViewHandle>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [gitPanelOpen, setGitPanelOpen] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [sessionCounts, setSessionCounts] = useState<Map<string, { slotCount: number; launchedCount: number }>>(new Map());
   const [isStoppingAll, setIsStoppingAll] = useState(false);
-  const [isSessionZoomed, setIsSessionZoomed] = useState(false);
   const [currentBranch, setCurrentBranch] = useState<string | undefined>(undefined);
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem("maestro-theme");
@@ -170,20 +166,6 @@ function App() {
     enabled: tabs.length >= 2,
   });
 
-  // Git store for commit count and refresh
-  const { commits, fetchCommits } = useGitStore();
-  const [isRefreshingGit, setIsRefreshingGit] = useState(false);
-
-  const handleRefreshGit = useCallback(async () => {
-    if (!activeProjectPath) return;
-    setIsRefreshingGit(true);
-    try {
-      await fetchCommits(activeProjectPath);
-    } finally {
-      setIsRefreshingGit(false);
-    }
-  }, [activeProjectPath, fetchCommits]);
-
   useEffect(() => {
     let cancelled = false;
     if (!activeProjectPath) {
@@ -239,7 +221,7 @@ function App() {
 
   return (
     <div
-      className="flex h-screen w-screen flex-col bg-maestro-bg"
+      className="flex h-screen w-screen flex-col overflow-hidden bg-maestro-bg"
       style={{ ["--mac-title-bar-inset" as string]: macTitleBarInset }}
     >
       {/* Project tabs — full width at top (with window controls) */}
@@ -252,9 +234,11 @@ function App() {
         sidebarOpen={sidebarOpen}
         onReorderTab={reorderTabs}
         onMoveTab={moveTab}
+        onToggleRightPanel={() => setRightPanelOpen((prev) => !prev)}
+        rightPanelOpen={rightPanelOpen}
       />
 
-      {/* Main area: sidebar + content */}
+      {/* Main area: sidebar + content + right panel */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar — below project tabs */}
         <Sidebar
@@ -264,81 +248,14 @@ function App() {
           onToggleTheme={toggleTheme}
         />
 
-        {/* Right column: top bar + content + bottom bar */}
+        {/* Center column: content + bottom bar */}
         <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Top bar row - hidden when a session is zoomed for more screen space */}
-          <div className={`flex h-10 shrink-0 bg-maestro-bg ${isSessionZoomed ? "hidden" : ""}`}>
-            {/* TopBar takes flex-1 to fill available space */}
-            <TopBar
-              sidebarOpen={sidebarOpen}
-              onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
-              branchName={currentBranch}
-              repoPath={activeTab ? activeTab.projectPath : undefined}
-              onToggleGitPanel={() => setGitPanelOpen((prev) => !prev)}
-              gitPanelOpen={gitPanelOpen}
-              hideWindowControls
-              onBranchChanged={(newBranch) => {
-                setCurrentBranch(newBranch);
-                multiProjectRef.current?.refreshBranchesInActiveProject();
-              }}
+          <main className="relative flex-1 overflow-hidden bg-maestro-bg">
+            <MultiProjectView
+              ref={multiProjectRef}
+              onSessionCountChange={handleSessionCountChange}
             />
-
-            {/* Git panel header - inline at same level as TopBar */}
-            {gitPanelOpen && (
-              <div
-                className="flex h-10 shrink-0 items-center border-l border-maestro-border px-3 gap-2 bg-maestro-bg"
-                style={{ width: 560 }}
-              >
-                <GitFork size={14} className="text-maestro-muted" />
-                <span className="text-sm font-medium text-maestro-text">Commits</span>
-                {commits.length > 0 && (
-                  <span className="rounded-full bg-maestro-accent/15 px-1.5 py-px text-[10px] font-medium text-maestro-accent">
-                    {commits.length}
-                  </span>
-                )}
-                <div className="flex-1" />
-                {activeProjectPath && (
-                  <button
-                    type="button"
-                    onClick={handleRefreshGit}
-                    disabled={isRefreshingGit}
-                    className="rounded p-1 text-maestro-muted transition-colors hover:bg-maestro-card hover:text-maestro-text disabled:opacity-50"
-                    aria-label="Refresh commits"
-                  >
-                    <RefreshCw size={14} className={isRefreshingGit ? "animate-spin" : ""} />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setGitPanelOpen(false)}
-                  className="rounded p-1 text-maestro-muted transition-colors hover:bg-maestro-card hover:text-maestro-text"
-                  aria-label="Close git panel"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Content area (main + optional git panel) */}
-          <div className="flex flex-1 overflow-hidden">
-            {/* Main content - MultiProjectView keeps all projects alive */}
-            <main className="relative flex-1 overflow-hidden bg-maestro-bg">
-              <MultiProjectView
-                ref={multiProjectRef}
-                onSessionCountChange={handleSessionCountChange}
-                onZoomChange={setIsSessionZoomed}
-              />
-            </main>
-
-            {/* Git graph panel (optional right side) */}
-            <GitGraphPanel
-              open={gitPanelOpen}
-              onClose={() => setGitPanelOpen(false)}
-              repoPath={activeProjectPath ?? null}
-              currentBranch={currentBranch ?? null}
-            />
-          </div>
+          </main>
 
           {/* Bottom action bar */}
           <div className="bg-maestro-bg">
@@ -385,6 +302,19 @@ function App() {
             />
           </div>
         </div>
+
+        {/* Right panel */}
+        <RightPanel
+          collapsed={!rightPanelOpen}
+          onCollapse={() => setRightPanelOpen(false)}
+          branchName={currentBranch}
+          repoPath={activeTab ? activeTab.projectPath : undefined}
+          onBranchChanged={(newBranch) => {
+            setCurrentBranch(newBranch);
+            multiProjectRef.current?.refreshBranchesInActiveProject();
+          }}
+          currentBranch={currentBranch}
+        />
       </div>
 
       {/* FDA Dialog for macOS TCC-protected paths */}

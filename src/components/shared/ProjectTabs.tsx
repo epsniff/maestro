@@ -14,7 +14,7 @@ import {
 } from "@dnd-kit/sortable";
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import { Minus, PanelLeft, Plus, Square, X } from "lucide-react";
+import { Minus, PanelLeft, PanelRight, Plus, Square, X } from "lucide-react";
 import { useCallback, useMemo, useRef } from "react";
 import { useProjectStatus, STATUS_COLORS } from "@/hooks/useProjectStatus";
 import { isMac } from "@/lib/platform";
@@ -34,6 +34,8 @@ interface ProjectTabsProps {
   sidebarOpen: boolean;
   onReorderTab: (activeId: string, overId: string) => void;
   onMoveTab: (tabId: string, direction: "left" | "right") => void;
+  onToggleRightPanel: () => void;
+  rightPanelOpen: boolean;
 }
 
 /**
@@ -141,6 +143,8 @@ export function ProjectTabs({
   sidebarOpen,
   onReorderTab,
   onMoveTab,
+  onToggleRightPanel,
+  rightPanelOpen,
 }: ProjectTabsProps) {
   const appWindow = useMemo(() => getCurrentWindow(), []);
 
@@ -207,7 +211,7 @@ export function ProjectTabs({
   return (
     <div
       data-tauri-drag-region
-      className="theme-transition no-select flex h-9 items-center border-b border-maestro-border bg-maestro-surface"
+      className="theme-transition no-select flex h-9 shrink-0 items-center border-b border-maestro-border bg-maestro-surface"
     >
       {/* Left: sidebar toggle + tabs (inset from CSS var for macOS traffic lights) */}
       <div
@@ -270,6 +274,22 @@ export function ProjectTabs({
 
       {/* Center: drag region fills remaining space */}
       <div data-tauri-drag-region className="flex-1" />
+
+      {/* Right panel toggle */}
+      <div className="flex items-center pr-1">
+        <button
+          type="button"
+          onClick={onToggleRightPanel}
+          className={`rounded p-1.5 transition-colors ${
+            rightPanelOpen
+              ? "text-maestro-accent hover:bg-maestro-accent/10"
+              : "text-maestro-muted hover:bg-maestro-border hover:text-maestro-text"
+          }`}
+          aria-label="Toggle right panel"
+        >
+          <PanelRight size={14} />
+        </button>
+      </div>
 
       {/* Right: window controls (hidden on macOS — custom traffic lights in row instead) */}
       {!isMac() && (

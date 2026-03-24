@@ -14,7 +14,11 @@ const STATUS_DEFS: {
   { key: "Timeout", label: "Timeout", colorClass: "bg-red-400" },
 ];
 
-export function StatusLegend() {
+interface StatusLegendProps {
+  direction?: "horizontal" | "vertical";
+}
+
+export function StatusLegend({ direction = "horizontal" }: StatusLegendProps) {
   const sessions = useSessionStore((s) => s.sessions);
   const counts = sessions.reduce<Record<BackendSessionStatus, number>>(
     (acc, session) => {
@@ -33,7 +37,7 @@ export function StatusLegend() {
   );
 
   return (
-    <div className="flex items-center gap-3">
+    <div className={direction === "vertical" ? "flex flex-col gap-1.5" : "flex items-center gap-3"}>
       {STATUS_DEFS.map((s) => {
         const count = counts[s.key] ?? 0;
         return (

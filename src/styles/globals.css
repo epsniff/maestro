@@ -58,6 +58,7 @@
     height: 100%;
     margin: 0;
     padding: 0;
+    overflow: hidden;
   }
 
   body {
@@ -242,6 +243,371 @@
 
   .sidebar-w-320 {
     width: 320px;
+  }
+
+  /* Right panel width classes (200–560px, 4px steps) */
+  .rpanel-w-200 {
+    width: 200px;
+  }
+
+  .rpanel-w-204 {
+    width: 204px;
+  }
+
+  .rpanel-w-208 {
+    width: 208px;
+  }
+
+  .rpanel-w-212 {
+    width: 212px;
+  }
+
+  .rpanel-w-216 {
+    width: 216px;
+  }
+
+  .rpanel-w-220 {
+    width: 220px;
+  }
+
+  .rpanel-w-224 {
+    width: 224px;
+  }
+
+  .rpanel-w-228 {
+    width: 228px;
+  }
+
+  .rpanel-w-232 {
+    width: 232px;
+  }
+
+  .rpanel-w-236 {
+    width: 236px;
+  }
+
+  .rpanel-w-240 {
+    width: 240px;
+  }
+
+  .rpanel-w-244 {
+    width: 244px;
+  }
+
+  .rpanel-w-248 {
+    width: 248px;
+  }
+
+  .rpanel-w-252 {
+    width: 252px;
+  }
+
+  .rpanel-w-256 {
+    width: 256px;
+  }
+
+  .rpanel-w-260 {
+    width: 260px;
+  }
+
+  .rpanel-w-264 {
+    width: 264px;
+  }
+
+  .rpanel-w-268 {
+    width: 268px;
+  }
+
+  .rpanel-w-272 {
+    width: 272px;
+  }
+
+  .rpanel-w-276 {
+    width: 276px;
+  }
+
+  .rpanel-w-280 {
+    width: 280px;
+  }
+
+  .rpanel-w-284 {
+    width: 284px;
+  }
+
+  .rpanel-w-288 {
+    width: 288px;
+  }
+
+  .rpanel-w-292 {
+    width: 292px;
+  }
+
+  .rpanel-w-296 {
+    width: 296px;
+  }
+
+  .rpanel-w-300 {
+    width: 300px;
+  }
+
+  .rpanel-w-304 {
+    width: 304px;
+  }
+
+  .rpanel-w-308 {
+    width: 308px;
+  }
+
+  .rpanel-w-312 {
+    width: 312px;
+  }
+
+  .rpanel-w-316 {
+    width: 316px;
+  }
+
+  .rpanel-w-320 {
+    width: 320px;
+  }
+
+  .rpanel-w-324 {
+    width: 324px;
+  }
+
+  .rpanel-w-328 {
+    width: 328px;
+  }
+
+  .rpanel-w-332 {
+    width: 332px;
+  }
+
+  .rpanel-w-336 {
+    width: 336px;
+  }
+
+  .rpanel-w-340 {
+    width: 340px;
+  }
+
+  .rpanel-w-344 {
+    width: 344px;
+  }
+
+  .rpanel-w-348 {
+    width: 348px;
+  }
+
+  .rpanel-w-352 {
+    width: 352px;
+  }
+
+  .rpanel-w-356 {
+    width: 356px;
+  }
+
+  .rpanel-w-360 {
+    width: 360px;
+  }
+
+  .rpanel-w-364 {
+    width: 364px;
+  }
+
+  .rpanel-w-368 {
+    width: 368px;
+  }
+
+  .rpanel-w-372 {
+    width: 372px;
+  }
+
+  .rpanel-w-376 {
+    width: 376px;
+  }
+
+  .rpanel-w-380 {
+    width: 380px;
+  }
+
+  .rpanel-w-384 {
+    width: 384px;
+  }
+
+  .rpanel-w-388 {
+    width: 388px;
+  }
+
+  .rpanel-w-392 {
+    width: 392px;
+  }
+
+  .rpanel-w-396 {
+    width: 396px;
+  }
+
+  .rpanel-w-400 {
+    width: 400px;
+  }
+
+  .rpanel-w-404 {
+    width: 404px;
+  }
+
+  .rpanel-w-408 {
+    width: 408px;
+  }
+
+  .rpanel-w-412 {
+    width: 412px;
+  }
+
+  .rpanel-w-416 {
+    width: 416px;
+  }
+
+  .rpanel-w-420 {
+    width: 420px;
+  }
+
+  .rpanel-w-424 {
+    width: 424px;
+  }
+
+  .rpanel-w-428 {
+    width: 428px;
+  }
+
+  .rpanel-w-432 {
+    width: 432px;
+  }
+
+  .rpanel-w-436 {
+    width: 436px;
+  }
+
+  .rpanel-w-440 {
+    width: 440px;
+  }
+
+  .rpanel-w-444 {
+    width: 444px;
+  }
+
+  .rpanel-w-448 {
+    width: 448px;
+  }
+
+  .rpanel-w-452 {
+    width: 452px;
+  }
+
+  .rpanel-w-456 {
+    width: 456px;
+  }
+
+  .rpanel-w-460 {
+    width: 460px;
+  }
+
+  .rpanel-w-464 {
+    width: 464px;
+  }
+
+  .rpanel-w-468 {
+    width: 468px;
+  }
+
+  .rpanel-w-472 {
+    width: 472px;
+  }
+
+  .rpanel-w-476 {
+    width: 476px;
+  }
+
+  .rpanel-w-480 {
+    width: 480px;
+  }
+
+  .rpanel-w-484 {
+    width: 484px;
+  }
+
+  .rpanel-w-488 {
+    width: 488px;
+  }
+
+  .rpanel-w-492 {
+    width: 492px;
+  }
+
+  .rpanel-w-496 {
+    width: 496px;
+  }
+
+  .rpanel-w-500 {
+    width: 500px;
+  }
+
+  .rpanel-w-504 {
+    width: 504px;
+  }
+
+  .rpanel-w-508 {
+    width: 508px;
+  }
+
+  .rpanel-w-512 {
+    width: 512px;
+  }
+
+  .rpanel-w-516 {
+    width: 516px;
+  }
+
+  .rpanel-w-520 {
+    width: 520px;
+  }
+
+  .rpanel-w-524 {
+    width: 524px;
+  }
+
+  .rpanel-w-528 {
+    width: 528px;
+  }
+
+  .rpanel-w-532 {
+    width: 532px;
+  }
+
+  .rpanel-w-536 {
+    width: 536px;
+  }
+
+  .rpanel-w-540 {
+    width: 540px;
+  }
+
+  .rpanel-w-544 {
+    width: 544px;
+  }
+
+  .rpanel-w-548 {
+    width: 548px;
+  }
+
+  .rpanel-w-552 {
+    width: 552px;
+  }
+
+  .rpanel-w-556 {
+    width: 556px;
+  }
+
+  .rpanel-w-560 {
+    width: 560px;
   }
 }
 
