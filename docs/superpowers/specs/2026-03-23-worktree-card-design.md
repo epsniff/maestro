@@ -31,7 +31,7 @@ New card in the **Status tab** of `RightPanel.tsx`, positioned below the branch 
 [status dot] branch-name ........................ Session N [chevron]
 ```
 
-- **Status dot:** Colored circle matching session status (green = Idle, yellow = Working, blue = NeedsInput, gray = no session).
+- **Status dot:** Colored circle matching session status. Reuse the existing `STATUS_DEFS` color mapping from `StatusLegend.tsx` (Idle = `maestro-muted`, Working = `maestro-accent`, NeedsInput = `yellow-300`, Done = `maestro-green`, gray = no session).
 - **Branch name:** Primary text label. For the main worktree, append a dimmed `(repo)` suffix.
 - **Session label:** Right-aligned, shows session display name or "Session N". Omitted for orphaned worktrees.
 - **Orphaned badge:** Red "orphaned" text badge, shown instead of session label when no active session uses this worktree.
@@ -61,8 +61,8 @@ Clicking a row expands it to reveal:
 ### Action Behaviors
 
 - **Focus Session:** Calls a callback prop (`onFocusSession(sessionId)`) that zooms/focuses the terminal grid on that session.
-- **Open in Finder:** Uses Tauri `shell.open()` to reveal the worktree directory in the system file manager.
-- **Launch Session:** Calls a callback prop (`onLaunchSession(branch, worktreePath)`) that creates a new pre-launch slot pre-configured with the orphaned worktree's branch.
+- **Open in Finder:** Uses Tauri `invoke("show_in_folder", { path })` or equivalent Rust command to reveal the directory. The `@tauri-apps/plugin-shell` `open()` API is not currently configured in this project, so use a custom Tauri command if one exists, or add one.
+- **Launch Session:** Calls a callback prop (`onLaunchSession(branch, worktreePath)`) that creates a new pre-launch slot pre-configured with the orphaned worktree's branch and reuses the existing worktree on disk (passes `worktreePath` through to avoid creating a duplicate).
 - **Delete:** Calls `cleanupSessionWorktree(repoPath, worktreePath)` to remove the worktree, then refreshes the list. Shows a confirmation prompt before deletion.
 
 ## Sorting Order
@@ -78,7 +78,7 @@ interface WorktreeCardProps {
   repoPath: string;
   isVisible: boolean;
   onFocusSession: (sessionId: number) => void;
-  onLaunchSession: (branch: string) => void;
+  onLaunchSession: (branch: string, worktreePath: string) => void;
 }
 ```
 
@@ -89,8 +89,8 @@ interface WorktreeCardProps {
 - Import and render `WorktreeCard` in the Status tab section.
 - Pass `isVisible` based on panel open state and active tab.
 - Pass `repoPath` from existing props.
-- Wire `onFocusSession` to communicate with TerminalGrid (via existing callback plumbing or a lightweight event).
-- Wire `onLaunchSession` to trigger slot creation with branch pre-selected.
+- Wire `onFocusSession` to communicate with TerminalGrid. RightPanel and TerminalGrid are siblings in `MultiProjectView` / `App.tsx`, so the callback must be lifted to their common parent and threaded down.
+- Wire `onLaunchSession` to trigger slot creation with branch and worktree path pre-selected, reusing the existing orphaned worktree directory.
 
 ### No New Stores
 
@@ -110,3 +110,4 @@ All data fetching is component-local (Approach 1). `listWorktrees()` is called i
 - **Fetch error:** Show "Failed to load worktrees" with a retry button.
 - **Many worktrees:** No pagination — scroll within the card. Maestro worktrees are bounded by session count (max ~12).
 - **Session on main checkout without worktree:** Sessions that use the project path directly (no branch selected) show as using the main worktree.
+- **Detached HEAD worktree:** `WorktreeInfo.branch` can be `null` for detached HEAD worktrees. Display the truncated commit hash (`head` field) as the label instead of a branch name.
