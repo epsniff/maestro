@@ -15,6 +15,7 @@ import { useGitHubStore } from "@/stores/useGitHubStore";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { BranchDropdown } from "./BranchDropdown";
 import { StatusLegend } from "./StatusLegend";
+import { WorktreeCard } from "./WorktreeCard";
 import { GitPanelTabs, type GitPanelTab } from "../git/GitPanelTabs";
 import { GitPanelContent } from "../git/GitPanelContent";
 import { CommitDetailPanel } from "../git/CommitDetailPanel";
@@ -31,6 +32,8 @@ interface RightPanelProps {
   repoPath?: string;
   onBranchChanged?: (newBranch: string) => void;
   currentBranch?: string;
+  onFocusSession?: (sessionId: number) => void;
+  onLaunchSession?: (branch: string, worktreePath: string) => void;
 }
 
 const PANEL_MIN_WIDTH = 200;
@@ -45,6 +48,8 @@ export function RightPanel({
   repoPath,
   onBranchChanged,
   currentBranch,
+  onFocusSession,
+  onLaunchSession,
 }: RightPanelProps) {
   const [activeTab, setActiveTab] = useState<RightPanelTab>("status");
   const [width, setWidth] = useState(280);
@@ -387,6 +392,9 @@ export function RightPanel({
             isSwitching={isSwitching}
             onBranchSelect={handleBranchSelect}
             onCreateBranch={handleCreateBranch}
+            isVisible={!collapsed && activeTab === "status"}
+            onFocusSession={onFocusSession}
+            onLaunchSession={onLaunchSession}
           />
         </div>
       ) : (
@@ -459,6 +467,9 @@ function StatusTab({
   isSwitching,
   onBranchSelect,
   onCreateBranch,
+  isVisible,
+  onFocusSession,
+  onLaunchSession,
 }: {
   branchName?: string;
   repoPath?: string;
@@ -467,6 +478,9 @@ function StatusTab({
   isSwitching: boolean;
   onBranchSelect: (branch: string) => void;
   onCreateBranch: (name: string, andCheckout: boolean) => void;
+  isVisible: boolean;
+  onFocusSession?: (sessionId: number) => void;
+  onLaunchSession?: (branch: string, worktreePath: string) => void;
 }) {
   return (
     <div className="space-y-3">
@@ -509,6 +523,16 @@ function StatusTab({
             )}
           </div>
         </div>
+      )}
+
+      {/* Worktree card */}
+      {repoPath && onFocusSession && onLaunchSession && (
+        <WorktreeCard
+          repoPath={repoPath}
+          isVisible={isVisible}
+          onFocusSession={onFocusSession}
+          onLaunchSession={onLaunchSession}
+        />
       )}
 
       {/* Status legend card */}

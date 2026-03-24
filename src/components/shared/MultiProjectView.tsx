@@ -10,8 +10,10 @@ interface MultiProjectViewProps {
 
 export interface MultiProjectViewHandle {
   addSessionToActiveProject: () => void;
+  addSessionWithConfigToActiveProject: (branch: string, worktreePath: string) => void;
   launchAllInActiveProject: () => Promise<void>;
   refreshBranchesInActiveProject: () => void;
+  focusSessionInActiveProject: (sessionId: number) => void;
 }
 
 /**
@@ -38,6 +40,13 @@ export const MultiProjectView = forwardRef<MultiProjectViewHandle, MultiProjectV
         gridRef?.addSession();
       }
     },
+    addSessionWithConfigToActiveProject: (branch: string, worktreePath: string) => {
+      const activeTab = tabs.find((t) => t.active);
+      if (activeTab) {
+        const gridRef = gridRefs.current.get(activeTab.id);
+        gridRef?.addSessionWithConfig(branch, worktreePath);
+      }
+    },
     launchAllInActiveProject: async () => {
       const activeTab = tabs.find((t) => t.active);
       if (activeTab) {
@@ -50,6 +59,13 @@ export const MultiProjectView = forwardRef<MultiProjectViewHandle, MultiProjectV
       if (activeTab) {
         const gridRef = gridRefs.current.get(activeTab.id);
         gridRef?.refreshBranches();
+      }
+    },
+    focusSessionInActiveProject: (sessionId: number) => {
+      const activeTab = tabs.find((t) => t.active);
+      if (activeTab) {
+        const gridRef = gridRefs.current.get(activeTab.id);
+        gridRef?.focusSession(sessionId);
       }
     },
   }), [tabs]);
