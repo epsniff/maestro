@@ -125,8 +125,10 @@ function createEmptySlot(
  */
 export interface TerminalGridHandle {
   addSession: () => void;
+  addSessionWithConfig: (branch: string, worktreePath: string) => void;
   launchAll: () => Promise<void>;
   refreshBranches: () => void;
+  focusSession: (sessionId: number) => void;
 }
 
 /**
@@ -1174,7 +1176,28 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
     refreshBranches();
   }, [mcpServers, skills, plugins, refreshBranches, orderedSlotIds]);
 
-  useImperativeHandle(ref, () => ({ addSession, launchAll, refreshBranches }), [addSession, launchAll, refreshBranches]);
+  const addSessionWithConfig = useCallback((branch: string, worktreePath: string) => {
+    if (slotsRef.current.length >= MAX_SESSIONS) return;
+    const newSlot = createEmptySlot(mcpServers, skills, plugins);
+    newSlot.branch = branch;
+    newSlot.worktreePath = worktreePath;
+    setSlots((prev) => {
+      if (prev.length >= MAX_SESSIONS) return prev;
+      return [...prev, newSlot];
+    });
+    setLayoutTree(() => buildGridTree([...orderedSlotIds, newSlot.id]));
+    setFocusedSlotId(newSlot.id);
+    refreshBranches();
+  }, [mcpServers, skills, plugins, refreshBranches, orderedSlotIds]);
+
+  const focusSession = useCallback((sessionId: number) => {
+    const slot = slotsRef.current.find((s) => s.sessionId === sessionId);
+    if (slot) {
+      setZoomedSlotId(slot.id);
+    }
+  }, []);
+
+  useImperativeHandle(ref, () => ({ addSession, addSessionWithConfig, launchAll, refreshBranches, focusSession }), [addSession, addSessionWithConfig, launchAll, refreshBranches, focusSession]);
 
   // Apply pending template from sidebar
   const pendingTemplate = useTemplateStore((s) => s.pendingTemplate);

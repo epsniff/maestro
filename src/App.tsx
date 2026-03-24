@@ -314,6 +314,15 @@ function App() {
             multiProjectRef.current?.refreshBranchesInActiveProject();
           }}
           currentBranch={currentBranch}
+          onFocusSession={(sessionId) => {
+            multiProjectRef.current?.focusSessionInActiveProject(sessionId);
+          }}
+          onLaunchSession={(branch, worktreePath) => {
+            if (activeTab && !activeTabSessionsLaunched) {
+              setSessionsLaunched(activeTab.id, true);
+            }
+            multiProjectRef.current?.addSessionWithConfigToActiveProject(branch, worktreePath);
+          }}
         />
       </div>
 
