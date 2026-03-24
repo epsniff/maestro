@@ -17,6 +17,7 @@ import {
   Search,
   Server,
   Sparkles,
+  Save,
   Star,
   Store,
   Terminal,
@@ -31,6 +32,7 @@ import type { BranchWithWorktreeStatus } from "@/lib/git";
 import type { McpServerConfig } from "@/lib/mcp";
 import type { PluginConfig, SkillConfig } from "@/lib/plugins";
 import type { AiMode } from "@/stores/useSessionStore";
+import { useTemplateStore } from "@/stores/useTemplateStore";
 import type { RepositoryInfo, WorkspaceType } from "@/stores/useWorkspaceStore";
 
 /** Pre-launch session slot configuration. */
@@ -161,6 +163,26 @@ export function PreLaunchCard({
   const [isCreatingBranch, setIsCreatingBranch] = useState(false);
   const [branchCreateError, setBranchCreateError] = useState<string | null>(null);
   const branchCreateInputRef = useRef<HTMLInputElement>(null);
+
+  // Save-as-template state
+  const [showTemplateName, setShowTemplateName] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const addTemplate = useTemplateStore((s) => s.addTemplate);
+  const templateNameInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSaveTemplate = () => {
+    const name = templateName.trim();
+    if (!name) return;
+    addTemplate({
+      name,
+      mode: slot.mode,
+      enabledMcpServers: slot.enabledMcpServers,
+      enabledSkills: slot.enabledSkills,
+      enabledPlugins: slot.enabledPlugins,
+    });
+    setTemplateName("");
+    setShowTemplateName(false);
+  };
 
   // Multi-repo state: track expanded repos and cached branches per repo
   const [expandedRepos, setExpandedRepos] = useState<Set<string>>(new Set());
@@ -1399,15 +1421,62 @@ export function PreLaunchCard({
           )}
         </div>
 
-        {/* Launch Button */}
-        <button
-          type="button"
-          onClick={onLaunch}
-          className="flex items-center justify-center gap-2 rounded bg-maestro-accent px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-maestro-accent/80"
-        >
-          <Play size={16} fill="currentColor" />
-          Launch Session
-        </button>
+        {/* Save Template / Launch Buttons */}
+        {showTemplateName ? (
+          <div className="flex items-center gap-2">
+            <input
+              ref={templateNameInputRef}
+              autoFocus
+              maxLength={50}
+              placeholder="Template name..."
+              className="flex-1 rounded border border-maestro-border bg-maestro-bg px-3 py-2 text-sm text-maestro-text outline-none focus:border-maestro-accent"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSaveTemplate();
+                if (e.key === "Escape") {
+                  setShowTemplateName(false);
+                  setTemplateName("");
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleSaveTemplate}
+              disabled={!templateName.trim()}
+              className="flex items-center gap-1.5 rounded bg-maestro-accent px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-maestro-accent/80 disabled:opacity-40"
+            >
+              <Check size={14} />
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowTemplateName(false); setTemplateName(""); }}
+              className="flex items-center rounded px-2 py-2 text-sm text-maestro-muted transition-colors hover:text-maestro-text"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowTemplateName(true)}
+              className="flex items-center justify-center gap-2 rounded border border-maestro-border px-4 py-2.5 text-sm font-medium text-maestro-text transition-colors hover:bg-maestro-border/40"
+            >
+              <Save size={16} />
+              Save Template
+            </button>
+            <button
+              type="button"
+              onClick={onLaunch}
+              className="flex flex-1 items-center justify-center gap-2 rounded bg-maestro-accent px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-maestro-accent/80"
+            >
+              <Play size={16} fill="currentColor" />
+              Launch Session
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

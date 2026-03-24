@@ -55,6 +55,7 @@ import { Tamagotchi } from "@/components/tamagotchi";
 import type { McpCustomServer } from "@/lib/mcp";
 import { checkClaudeMd, type ClaudeMdStatus } from "@/lib/claudemd";
 import { OpenCodeIcon } from "@/components/icons/OpenCodeIcon";
+import { TemplatesSection } from "./TemplatesSection";
 
 type SidebarTab = "config" | "processes";
 
@@ -66,7 +67,7 @@ interface SidebarProps {
 }
 
 /* ── Shared card class ── */
-const cardClass =
+export const cardClass =
   "sidebar-card-link rounded-lg border border-maestro-border/60 bg-maestro-card p-3 overflow-hidden shadow-[0_1px_4px_rgb(0_0_0/0.15),0_0_0_1px_rgb(255_255_255/0.03)_inset] transition-shadow hover:shadow-[0_2px_8px_rgb(0_0_0/0.25),0_0_0_1px_rgb(255_255_255/0.05)_inset]";
 
 const divider = <div className="h-px bg-maestro-border/30 my-1" />;
@@ -257,7 +258,7 @@ export function Sidebar({ collapsed, onCollapse, theme, onToggleTheme }: Sidebar
 /*  SECTION HEADER (reusable)                                        */
 /* ================================================================ */
 
-function SectionHeader({
+export function SectionHeader({
   icon: Icon,
   label,
   breathe = false,
@@ -303,6 +304,8 @@ function ConfigTab({
       <ProjectContextSection />
       {divider}
       <SessionsSection />
+      {divider}
+      <TemplatesSection />
       {divider}
       <StatusSection />
       {divider}
