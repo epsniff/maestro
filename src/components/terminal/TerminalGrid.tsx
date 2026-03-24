@@ -810,11 +810,18 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
       if (slot) {
         focusCallbacksRef.current.delete(slot.id);
       }
+      setZoomedSlotId(null);
       onAllSessionsClosedRef.current();
     } else {
       // Clean up cached focus callback for this slot
       if (slot) {
         focusCallbacksRef.current.delete(slot.id);
+
+        // If the closed pane was zoomed, switch zoom to its sibling
+        setZoomedSlotId((prev) => {
+          if (prev !== slot.id) return prev;
+          return findSiblingSlotId(layoutTree, slot.id);
+        });
 
         // If the closed pane was focused, focus its sibling
         if (focusedSlotId === slot.id) {
@@ -889,9 +896,16 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
     // If removing the last slot, return to idle landing view immediately
     // rather than going through an intermediate empty state
     if (slotsRef.current.length <= 1 && onAllSessionsClosedRef.current) {
+      setZoomedSlotId(null);
       onAllSessionsClosedRef.current();
       return;
     }
+
+    // If the removed pane was zoomed, switch zoom to its sibling
+    setZoomedSlotId((prev) => {
+      if (prev !== slotId) return prev;
+      return findSiblingSlotId(layoutTree, slotId);
+    });
 
     // If the removed pane was focused, focus its sibling
     if (focusedSlotId === slotId) {
