@@ -54,7 +54,7 @@ export function RightPanel({
   onLaunchSession,
 }: RightPanelProps) {
   const [activeTab, setActiveTab] = useState<RightPanelTab>("status");
-  const [width, setWidth] = useState(280);
+  const [width, setWidth] = useState(308);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef<{ x: number; w: number } | null>(null);
   const panelWidthClass = collapsed ? "w-0" : `rpanel-w-${width}`;
