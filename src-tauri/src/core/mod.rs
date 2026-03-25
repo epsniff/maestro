@@ -19,6 +19,7 @@ pub mod session_manager;
 pub mod status_server;
 pub mod terminal_backend;
 pub mod windows_process;
+pub mod todo_manager;
 pub mod worktree_manager;
 pub mod xterm_backend;
 

@@ -334,7 +334,8 @@ pub async fn write_session_mcp_config(
                 "env": {
                     "MAESTRO_SESSION_ID": session_id.to_string(),
                     "MAESTRO_STATUS_URL": status_url,
-                    "MAESTRO_INSTANCE_ID": instance_id
+                    "MAESTRO_INSTANCE_ID": instance_id,
+                    "MAESTRO_PROJECT_PATH": working_dir.to_string_lossy()
                 }
             }),
         );
