@@ -8,6 +8,7 @@ pub mod mcp;
 pub mod plugin;
 pub mod session;
 pub mod terminal;
+pub mod todo;
 pub mod update;
 pub mod usage;
 pub mod worktree;

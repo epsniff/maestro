@@ -4,6 +4,7 @@ import {
   ChevronDown,
   GitBranch,
   GitFork,
+  ListTodo,
   Loader2,
   RefreshCw,
   Terminal,
@@ -22,8 +23,9 @@ import { CommitDetailPanel } from "../git/CommitDetailPanel";
 import { PullRequestDetailPanel } from "../git/pulls/PullRequestDetailPanel";
 import { IssueDetailPanel } from "../git/issues/IssueDetailPanel";
 import { DiscussionDetailPanel } from "../git/discussions/DiscussionDetailPanel";
+import { TodoPanel } from "../todo/TodoPanel";
 
-type RightPanelTab = "status" | "git";
+type RightPanelTab = "status" | "git" | "todo";
 
 interface RightPanelProps {
   collapsed: boolean;
@@ -379,6 +381,18 @@ export function RightPanel({
             </span>
           )}
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("todo")}
+          className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold tracking-wide uppercase ${
+            activeTab === "todo"
+              ? "border-b-2 border-maestro-accent text-maestro-accent"
+              : "text-maestro-muted hover:text-maestro-text"
+          }`}
+        >
+          <ListTodo size={12} />
+          Todo
+        </button>
       </div>
 
       {/* Scrollable content */}
@@ -397,6 +411,16 @@ export function RightPanel({
             onLaunchSession={onLaunchSession}
           />
         </div>
+      ) : activeTab === "todo" ? (
+        repoPath ? (
+          <TodoPanel projectPath={repoPath} />
+        ) : (
+          <div className="flex flex-1 items-center justify-center px-4 text-center">
+            <p className="text-xs text-maestro-muted/60">
+              Open a project to manage todos
+            </p>
+          </div>
+        )
       ) : (
         <GitTab
           repoPath={repoPath}

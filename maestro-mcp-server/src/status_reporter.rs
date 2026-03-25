@@ -156,6 +156,103 @@ impl StatusReporter {
         // Graceful degradation: don't crash MCP server for status failures
         Ok(())
     }
+
+    /// Derive the base URL from the status URL (strip "/status" suffix).
+    fn base_url(&self) -> Option<String> {
+        self.status_url.as_ref().map(|url| {
+            url.trim_end_matches("/status").to_string()
+        })
+    }
+
+    /// List todos for a project via HTTP GET.
+    pub async fn get_todos(&self, project_path: &str) -> Result<Vec<serde_json::Value>, StatusError> {
+        let base = match self.base_url() {
+            Some(url) => url,
+            None => return Ok(vec![]),
+        };
+        let instance_id = self.instance_id.clone().unwrap_or_default();
+
+        let resp = self.client
+            .get(format!("{}/todos", base))
+            .query(&[("project_path", project_path), ("instance_id", &instance_id)])
+            .timeout(std::time::Duration::from_secs(5))
+            .send()
+            .await?;
+
+        if !resp.status().is_success() {
+            return Err(StatusError::HttpStatus(resp.status().as_u16()));
+        }
+
+        let items: Vec<serde_json::Value> = resp.json().await?;
+        Ok(items)
+    }
+
+    /// Add a todo via HTTP POST.
+    pub async fn add_todo(&self, project_path: &str, text: &str) -> Result<serde_json::Value, StatusError> {
+        let base = match self.base_url() {
+            Some(url) => url,
+            None => return Err(StatusError::HttpStatus(503)),
+        };
+        let instance_id = self.instance_id.clone().unwrap_or_default();
+
+        let resp = self.client
+            .post(format!("{}/todos", base))
+            .json(&serde_json::json!({
+                "project_path": project_path,
+                "instance_id": instance_id,
+                "text": text
+            }))
+            .timeout(std::time::Duration::from_secs(5))
+            .send()
+            .await?;
+
+        if !resp.status().is_success() {
+            return Err(StatusError::HttpStatus(resp.status().as_u16()));
+        }
+
+        let item: serde_json::Value = resp.json().await?;
+        Ok(item)
+    }
+
+    /// Update a todo via HTTP PATCH.
+    pub async fn update_todo(
+        &self,
+        project_path: &str,
+        id: &str,
+        completed: Option<bool>,
+        text: Option<&str>,
+    ) -> Result<serde_json::Value, StatusError> {
+        let base = match self.base_url() {
+            Some(url) => url,
+            None => return Err(StatusError::HttpStatus(503)),
+        };
+        let instance_id = self.instance_id.clone().unwrap_or_default();
+
+        let mut body = serde_json::json!({
+            "project_path": project_path,
+            "instance_id": instance_id
+        });
+        if let Some(c) = completed {
+            body["completed"] = serde_json::json!(c);
+        }
+        if let Some(t) = text {
+            body["text"] = serde_json::json!(t);
+        }
+
+        let resp = self.client
+            .patch(format!("{}/todos/{}", base, id))
+            .json(&body)
+            .timeout(std::time::Duration::from_secs(5))
+            .send()
+            .await?;
+
+        if !resp.status().is_success() {
+            return Err(StatusError::HttpStatus(resp.status().as_u16()));
+        }
+
+        let item: serde_json::Value = resp.json().await?;
+        Ok(item)
+    }
 }
 
 #[cfg(test)]

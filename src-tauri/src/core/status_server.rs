@@ -21,6 +21,7 @@ use tauri::{AppHandle, Emitter};
 use tokio::sync::RwLock;
 
 use super::claude_event::ClaudeEvent;
+use super::todo_manager::TodoManager;
 
 /// Maximum number of pending statuses to buffer (prevents memory leaks).
 const MAX_PENDING_STATUSES: usize = 100;
@@ -31,6 +32,9 @@ type EmitFn = Arc<dyn Fn(SessionStatusPayload) + Send + Sync>;
 
 /// Callback for emitting hook-sourced ClaudeEvents.
 type HookEmitFn = Arc<dyn Fn(ClaudeEvent) + Send + Sync>;
+
+/// Callback for emitting todo-changed events. Takes project_path as argument.
+type TodoEmitFn = Arc<dyn Fn(String) + Send + Sync>;
 
 /// Status payload received from MCP server.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -76,11 +80,14 @@ pub struct HookGenericRequest {
 struct ServerState {
     emit_fn: EmitFn,
     hook_emit_fn: Option<HookEmitFn>,
+    todo_emit_fn: Option<TodoEmitFn>,
     instance_id: String,
     /// Maps session_id -> project_path for routing status updates
     session_projects: Arc<RwLock<HashMap<u32, String>>>,
     /// Buffers status requests that arrive before session registration
     pending_statuses: Arc<RwLock<HashMap<u32, StatusRequest>>>,
+    /// Todo manager for MCP-accessible todo operations
+    todo_manager: Option<Arc<TodoManager>>,
 }
 
 /// HTTP status server that receives status updates from MCP servers.
@@ -100,6 +107,8 @@ fn build_router(state: Arc<ServerState>) -> Router {
         .route("/hook/session-end", post(handle_hook_session_end))
         .route("/hook/pre-tool", post(handle_hook_pre_tool))
         .route("/hook/stop", post(handle_hook_stop))
+        .route("/todos", axum::routing::get(handle_todos_list).post(handle_todos_add))
+        .route("/todos/{id}", axum::routing::patch(handle_todos_update))
         .with_state(state)
 }
 
@@ -143,6 +152,8 @@ impl StatusServer {
         app_handle: AppHandle,
         instance_id: String,
         hook_emit_fn: Option<Arc<dyn Fn(ClaudeEvent) + Send + Sync>>,
+        todo_manager: Option<Arc<TodoManager>>,
+        todo_emit_fn: Option<TodoEmitFn>,
     ) -> Option<Self> {
         // Find and bind in one step to avoid race conditions where another
         // process grabs the port between checking and binding
@@ -154,9 +165,11 @@ impl StatusServer {
         let state = Arc::new(ServerState {
             emit_fn: emit_fn.clone(),
             hook_emit_fn,
+            todo_emit_fn,
             instance_id: instance_id.clone(),
             session_projects: session_projects.clone(),
             pending_statuses: pending_statuses.clone(),
+            todo_manager,
         });
 
         let app = build_router(state);
@@ -525,6 +538,88 @@ async fn handle_hook_stop(
     StatusCode::OK
 }
 
+// ── Todo handlers ───────────────────────────────────────────────────
+
+/// Query parameters for listing todos.
+#[derive(Debug, Deserialize)]
+struct TodoListQuery {
+    project_path: String,
+    instance_id: String,
+}
+
+/// Request payload for adding a todo.
+#[derive(Debug, Deserialize)]
+struct TodoAddRequest {
+    project_path: String,
+    instance_id: String,
+    text: String,
+}
+
+/// Request payload for updating a todo.
+#[derive(Debug, Deserialize)]
+struct TodoUpdateRequest {
+    project_path: String,
+    instance_id: String,
+    #[serde(default)]
+    completed: Option<bool>,
+    #[serde(default)]
+    text: Option<String>,
+}
+
+/// List todos for a project.
+async fn handle_todos_list(
+    State(state): State<Arc<ServerState>>,
+    axum::extract::Query(query): axum::extract::Query<TodoListQuery>,
+) -> Result<Json<Vec<super::todo_manager::TodoItem>>, StatusCode> {
+    if query.instance_id != state.instance_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    let mgr = state.todo_manager.as_ref().ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
+    Ok(Json(mgr.list(&query.project_path).await))
+}
+
+/// Add a new todo.
+async fn handle_todos_add(
+    State(state): State<Arc<ServerState>>,
+    Json(payload): Json<TodoAddRequest>,
+) -> Result<Json<super::todo_manager::TodoItem>, StatusCode> {
+    if payload.instance_id != state.instance_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    let mgr = state.todo_manager.as_ref().ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
+    let item = mgr.add(&payload.project_path, payload.text).await.map_err(|e| {
+        log::error!("[TODO] Failed to add: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+    if let Some(ref emit) = state.todo_emit_fn {
+        (emit)(payload.project_path);
+    }
+    Ok(Json(item))
+}
+
+/// Update a todo (complete/uncomplete/change text).
+async fn handle_todos_update(
+    State(state): State<Arc<ServerState>>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+    Json(payload): Json<TodoUpdateRequest>,
+) -> Result<Json<super::todo_manager::TodoItem>, StatusCode> {
+    if payload.instance_id != state.instance_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    let mgr = state.todo_manager.as_ref().ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
+    let item = mgr
+        .update(&payload.project_path, &id, payload.text, payload.completed)
+        .await
+        .map_err(|e| {
+            log::error!("[TODO] Failed to update: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    if let Some(ref emit) = state.todo_emit_fn {
+        (emit)(payload.project_path);
+    }
+    Ok(Json(item))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -568,9 +663,11 @@ mod tests {
         let state = Arc::new(ServerState {
             emit_fn,
             hook_emit_fn: None,
+            todo_emit_fn: None,
             instance_id: instance_id.to_string(),
             session_projects: session_projects.clone(),
             pending_statuses: pending_statuses.clone(),
+            todo_manager: None,
         });
 
         let app = build_router(state);
@@ -862,9 +959,11 @@ mod tests {
         let state = Arc::new(ServerState {
             emit_fn,
             hook_emit_fn: Some(hook_emit_fn),
+            todo_emit_fn: None,
             instance_id: "test-instance".to_string(),
             session_projects: Arc::new(RwLock::new(HashMap::new())),
             pending_statuses: Arc::new(RwLock::new(HashMap::new())),
+            todo_manager: None,
         });
 
         let app = build_router(state);

@@ -15,6 +15,7 @@ use core::status_server::StatusServer;
 use core::{ClaudeEvent, EventBus, TranscriptWatcher};
 use core::ProcessManager;
 use core::session_manager::SessionManager;
+use core::todo_manager::TodoManager;
 use core::worktree_manager::WorktreeManager;
 
 /// Entry point for the Tauri application.
@@ -112,6 +113,12 @@ pub fn run() {
         .manage(SessionManager::new())
         .manage(WorktreeManager::new())
         .setup(|app| {
+            // Create TodoManager with persistence in app data dir
+            let app_data_dir = app.path().app_data_dir()
+                .expect("Failed to resolve app data directory");
+            let todo_manager = Arc::new(TodoManager::new(app_data_dir));
+            app.manage(todo_manager.clone());
+
             // Generate a unique instance ID for this Maestro run
             // This prevents status pollution between different app instances
             let instance_id = uuid::Uuid::new_v4().to_string();
@@ -141,12 +148,24 @@ pub fn run() {
                 event_bus_for_hooks.emit(event);
             });
 
+            // Create todo-changed emit callback
+            let app_handle_for_todo = app.handle().clone();
+            let todo_emit_fn: Arc<dyn Fn(String) + Send + Sync> = Arc::new(move |project_path: String| {
+                let _ = app_handle_for_todo.emit("todo-changed", serde_json::json!({ "project_path": project_path }));
+            });
+
             // Start the HTTP status server for MCP status reporting
             // IMPORTANT: This must be done synchronously so the server is ready
             // before any commands try to use it
             let app_handle = app.handle().clone();
             let server = tauri::async_runtime::block_on(async {
-                StatusServer::start(app_handle, instance_id, Some(hook_emit_fn)).await
+                StatusServer::start(
+                    app_handle,
+                    instance_id,
+                    Some(hook_emit_fn),
+                    Some(todo_manager),
+                    Some(todo_emit_fn),
+                ).await
             });
 
             match server {
@@ -308,6 +327,12 @@ pub fn run() {
             // Hooks commands
             commands::hooks::write_session_hooks_config,
             commands::hooks::remove_session_hooks_config,
+            // Todo commands
+            commands::todo::get_todos,
+            commands::todo::add_todo,
+            commands::todo::update_todo,
+            commands::todo::remove_todo,
+            commands::todo::reorder_todos,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Maestro");

@@ -51,6 +51,7 @@ struct JsonRpcError {
 /// MCP server implementation.
 pub struct McpServer {
     status_reporter: StatusReporter,
+    project_path: Option<String>,
 }
 
 impl McpServer {
@@ -58,9 +59,11 @@ impl McpServer {
         status_url: Option<String>,
         session_id: Option<u32>,
         instance_id: Option<String>,
+        project_path: Option<String>,
     ) -> Self {
         Self {
             status_reporter: StatusReporter::new(status_url, session_id, instance_id),
+            project_path,
         }
     }
 
@@ -192,6 +195,51 @@ impl McpServer {
                         },
                         "required": ["state", "message"]
                     }
+                },
+                {
+                    "name": "maestro_todos_list",
+                    "description": "List all to-do items for the current project in the Maestro UI. Returns items sorted with unchecked items first (by order) then checked items (most recently completed first).",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                },
+                {
+                    "name": "maestro_todos_add",
+                    "description": "Add a new to-do item to the Maestro project to-do list.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "text": {
+                                "type": "string",
+                                "description": "The text content of the to-do item (supports multi-line)"
+                            }
+                        },
+                        "required": ["text"]
+                    }
+                },
+                {
+                    "name": "maestro_todos_update",
+                    "description": "Update a to-do item — mark it complete/incomplete or change its text.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "The ID of the to-do item to update"
+                            },
+                            "completed": {
+                                "type": "boolean",
+                                "description": "Set to true to mark complete, false to mark incomplete"
+                            },
+                            "text": {
+                                "type": "string",
+                                "description": "New text for the to-do item (optional)"
+                            }
+                        },
+                        "required": ["id"]
+                    }
                 }
             ]
         })
@@ -237,6 +285,93 @@ impl McpServer {
                     ]
                 }))
             }
+            "maestro_todos_list" => {
+                let project_path = match &self.project_path {
+                    Some(p) => p.clone(),
+                    None => return Ok(json!({
+                        "content": [{ "type": "text", "text": "Error: MAESTRO_PROJECT_PATH not configured" }],
+                        "isError": true
+                    })),
+                };
+
+                match self.status_reporter.get_todos(&project_path).await {
+                    Ok(todos) => {
+                        let text = if todos.is_empty() {
+                            "No to-do items.".to_string()
+                        } else {
+                            todos
+                                .iter()
+                                .map(|t| {
+                                    let check = if t["completed"].as_bool().unwrap_or(false) { "x" } else { " " };
+                                    let id = t["id"].as_str().unwrap_or("?");
+                                    let text = t["text"].as_str().unwrap_or("");
+                                    format!("[{}] {} (id: {})", check, text, id)
+                                })
+                                .collect::<Vec<_>>()
+                                .join("\n")
+                        };
+                        Ok(json!({ "content": [{ "type": "text", "text": text }] }))
+                    }
+                    Err(e) => Ok(json!({
+                        "content": [{ "type": "text", "text": format!("Error listing todos: {}", e) }],
+                        "isError": true
+                    })),
+                }
+            }
+            "maestro_todos_add" => {
+                let project_path = match &self.project_path {
+                    Some(p) => p.clone(),
+                    None => return Ok(json!({
+                        "content": [{ "type": "text", "text": "Error: MAESTRO_PROJECT_PATH not configured" }],
+                        "isError": true
+                    })),
+                };
+
+                let arguments = params.get("arguments").cloned().unwrap_or(json!({}));
+                let text = arguments.get("text").and_then(|v| v.as_str()).unwrap_or("");
+
+                match self.status_reporter.add_todo(&project_path, text).await {
+                    Ok(item) => {
+                        let id = item["id"].as_str().unwrap_or("?");
+                        Ok(json!({
+                            "content": [{ "type": "text", "text": format!("Added todo: {} (id: {})", text, id) }]
+                        }))
+                    }
+                    Err(e) => Ok(json!({
+                        "content": [{ "type": "text", "text": format!("Error adding todo: {}", e) }],
+                        "isError": true
+                    })),
+                }
+            }
+            "maestro_todos_update" => {
+                let project_path = match &self.project_path {
+                    Some(p) => p.clone(),
+                    None => return Ok(json!({
+                        "content": [{ "type": "text", "text": "Error: MAESTRO_PROJECT_PATH not configured" }],
+                        "isError": true
+                    })),
+                };
+
+                let arguments = params.get("arguments").cloned().unwrap_or(json!({}));
+                let id = arguments.get("id").and_then(|v| v.as_str()).unwrap_or("");
+                let completed = arguments.get("completed").and_then(|v| v.as_bool());
+                let text = arguments.get("text").and_then(|v| v.as_str());
+
+                match self.status_reporter.update_todo(&project_path, id, completed, text).await {
+                    Ok(item) => {
+                        let item_text = item["text"].as_str().unwrap_or("?");
+                        let is_completed = item["completed"].as_bool().unwrap_or(false);
+                        let status = if is_completed { "completed" } else { "pending" };
+                        Ok(json!({
+                            "content": [{ "type": "text", "text": format!("Updated todo: {} [{}]", item_text, status) }]
+                        }))
+                    }
+                    Err(e) => Ok(json!({
+                        "content": [{ "type": "text", "text": format!("Error updating todo: {}", e) }],
+                        "isError": true
+                    })),
+                }
+            }
             _ => Ok(json!({
                 "content": [
                     {
@@ -256,7 +391,7 @@ mod tests {
 
     /// Helper: create an McpServer with no status URL (won't make HTTP calls).
     fn test_server() -> McpServer {
-        McpServer::new(None, Some(1), Some("test-instance".to_string()))
+        McpServer::new(None, Some(1), Some("test-instance".to_string()), None)
     }
 
     /// Helper: deserialize a JsonRpcRequest from JSON.
@@ -302,8 +437,11 @@ mod tests {
         let response = server.handle_request(&request).await.expect("should return response");
         let result = response.result.expect("should have result");
         let tools = result["tools"].as_array().expect("tools should be array");
-        assert_eq!(tools.len(), 1);
+        assert_eq!(tools.len(), 4);
         assert_eq!(tools[0]["name"], "maestro_status");
+        assert_eq!(tools[1]["name"], "maestro_todos_list");
+        assert_eq!(tools[2]["name"], "maestro_todos_add");
+        assert_eq!(tools[3]["name"], "maestro_todos_update");
     }
 
     #[tokio::test]
