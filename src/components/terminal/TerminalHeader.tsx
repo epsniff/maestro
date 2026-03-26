@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { OpenCodeIcon, type IconComponent } from "@/components/icons";
 
-export type SessionStatus = "idle" | "starting" | "working" | "needs-input" | "done" | "error" | "timeout";
+export type SessionStatus = "idle" | "starting" | "working" | "needs-input" | "done" | "error" | "timeout" | "disconnected";
 
 export type AIProvider = "claude" | "gemini" | "codex" | "opencode" | "plain";
 
@@ -51,6 +51,7 @@ const STATUS_COLOR: Record<SessionStatus, string> = {
   done: "text-maestro-green",
   error: "text-maestro-red",
   timeout: "text-maestro-red",
+  disconnected: "text-maestro-red",
 };
 
 const STATUS_LABEL: Record<SessionStatus, string> = {
@@ -61,6 +62,7 @@ const STATUS_LABEL: Record<SessionStatus, string> = {
   done: "Done",
   error: "Error",
   timeout: "Startup Timeout",
+  disconnected: "Disconnected",
 };
 
 const providerConfig: Record<AIProvider, { icon: IconComponent; label: string }> = {

@@ -82,7 +82,7 @@ impl McpServer {
             let request: JsonRpcRequest = match serde_json::from_str(&line) {
                 Ok(req) => req,
                 Err(e) => {
-                    eprintln!("Failed to parse request: {}", e);
+                    log::warn!("Failed to parse request: {}", e);
                     continue;
                 }
             };
@@ -146,11 +146,11 @@ impl McpServer {
         match request.method.as_str() {
             "notifications/initialized" => {
                 // Auto-report "idle" status when Claude connects
-                eprintln!("[maestro-mcp-server] Initialized - reporting idle status");
+                log::info!("Initialized - reporting idle status");
                 let _ = self.status_reporter.report_status("idle", "Ready", None).await;
             }
             _ => {
-                eprintln!("[maestro-mcp-server] Unknown notification: {}", request.method);
+                log::debug!("Unknown notification: {}", request.method);
             }
         }
     }

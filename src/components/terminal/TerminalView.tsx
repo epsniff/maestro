@@ -72,6 +72,7 @@ function mapStatus(status: BackendSessionStatus): SessionStatus {
     Done: "done",
     Error: "error",
     Timeout: "timeout",
+    Disconnected: "disconnected",
   };
   const mapped = map[status];
   if (!mapped) {
@@ -93,6 +94,7 @@ function cellStatusClass(status: SessionStatus): string {
     case "done":
       return "terminal-cell-done";
     case "error":
+    case "disconnected":
       return "terminal-cell-error";
     default:
       return "terminal-cell-idle";
