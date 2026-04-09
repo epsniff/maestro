@@ -1,0 +1,80 @@
+{
+  "scopes": [
+    {
+      "id": "upstream-216",
+      "name": "Fix duplicate usage API polling (#216)",
+      "status": "done",
+      "instruction_file": "loop-builder-upstream-sync/instructions/scope-216-usage-polling.md",
+      "type": "upstream-port",
+      "approach": "reimplementation",
+      "notes": "Ported both backend cache (30s TTL + 429 retry-after) and frontend singleton polling (ref-counted with exponential backoff). Fork code was nearly identical to upstream base."
+    },
+    {
+      "id": "upstream-217",
+      "name": "Show non-git directories in workspace selector (#217/#218)",
+      "status": "pending",
+      "instruction_file": "loop-builder-upstream-sync/instructions/scope-217-non-git-dirs.md",
+      "type": "upstream-port",
+      "approach": null,
+      "notes": null
+    },
+    {
+      "id": "upstream-220",
+      "name": "Session renaming with backend persistence (#220)",
+      "status": "pending",
+      "instruction_file": "loop-builder-upstream-sync/instructions/scope-220-session-renaming.md",
+      "type": "upstream-port",
+      "approach": null,
+      "notes": null
+    },
+    {
+      "id": "file-dragdrop",
+      "name": "Expand file drag/drop to all file types in terminals",
+      "status": "pending",
+      "instruction_file": "loop-builder-upstream-sync/instructions/scope-file-dragdrop.md",
+      "type": "upstream-port",
+      "approach": null,
+      "notes": null
+    },
+    {
+      "id": "stale-sessions",
+      "name": "Fix stale session cleanup on kill_all_sessions",
+      "status": "pending",
+      "instruction_file": "loop-builder-upstream-sync/instructions/scope-stale-sessions.md",
+      "type": "upstream-port",
+      "approach": null,
+      "notes": null
+    },
+    {
+      "id": "instance-id",
+      "name": "Relax instance_id validation for reconnecting sessions",
+      "status": "pending",
+      "instruction_file": "loop-builder-upstream-sync/instructions/scope-instance-id.md",
+      "type": "upstream-port",
+      "approach": null,
+      "notes": null
+    },
+    {
+      "id": "file-path-input",
+      "name": "Add file path text input to open-file session pane",
+      "status": "pending",
+      "instruction_file": "loop-builder-upstream-sync/instructions/scope-file-path-input.md",
+      "type": "new-feature",
+      "approach": null,
+      "notes": null
+    },
+    {
+      "id": "file-explorer",
+      "name": "File system explorer tab in sidebar",
+      "status": "pending",
+      "instruction_file": "loop-builder-upstream-sync/instructions/scope-file-explorer.md",
+      "type": "new-feature",
+      "approach": null,
+      "notes": null
+    }
+  ],
+  "completed": ["upstream-216"],
+  "iteration": 1,
+  "pivot_count": 0,
+  "max_pivots": 3
+}

@@ -5,9 +5,18 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
+use std::time::Instant;
 
 /// Flag to skip credential store after first failure (prevents repeated prompts).
 static CREDENTIAL_STORE_FAILED: AtomicBool = AtomicBool::new(false);
+
+/// Minimum seconds between actual API calls. Requests within this window return cached data.
+const CACHE_TTL_SECS: u64 = 30;
+
+/// Cached usage response to prevent duplicate API calls from multiple frontend
+/// components or rapid re-renders. Stores (fetch_time, ttl_secs, data).
+static USAGE_CACHE: Mutex<Option<(Instant, u64, UsageData)>> = Mutex::new(None);
 
 /// Usage data from Anthropic's OAuth API.
 #[derive(Debug, Clone, Serialize)]
@@ -102,8 +111,10 @@ async fn read_keychain_credentials() -> Result<CredentialsData, String> {
     let output = tokio::process::Command::new("security")
         .args([
             "find-generic-password",
-            "-s", "Claude Code-credentials",
-            "-a", &username,
+            "-s",
+            "Claude Code-credentials",
+            "-a",
+            &username,
             "-w",
         ])
         .output()
@@ -114,11 +125,9 @@ async fn read_keychain_credentials() -> Result<CredentialsData, String> {
         return Err("No keychain entry found".to_string());
     }
 
-    let data = String::from_utf8(output.stdout)
-        .map_err(|_| "Invalid keychain data")?;
+    let data = String::from_utf8(output.stdout).map_err(|_| "Invalid keychain data")?;
 
-    serde_json::from_str(data.trim())
-        .map_err(|e| format!("Failed to parse keychain data: {}", e))
+    serde_json::from_str(data.trim()).map_err(|e| format!("Failed to parse keychain data: {}", e))
 }
 
 /// Read credentials from platform credential store (Windows/Linux).
@@ -140,8 +149,7 @@ async fn read_keychain_credentials() -> Result<CredentialsData, String> {
     .await
     .map_err(|e| format!("Task join error: {}", e))??;
 
-    serde_json::from_str(&result)
-        .map_err(|e| format!("Failed to parse credential data: {}", e))
+    serde_json::from_str(&result).map_err(|e| format!("Failed to parse credential data: {}", e))
 }
 
 /// Read credentials from file (fallback for non-macOS or if keychain fails).
@@ -160,8 +168,7 @@ async fn read_file_credentials() -> Result<CredentialsData, String> {
         .await
         .map_err(|e| format!("Failed to read file: {}", e))?;
 
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse file: {}", e))
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse file: {}", e))
 }
 
 /// Get a valid access token, trying platform credential store first then file.
@@ -198,8 +205,38 @@ async fn get_access_token() -> Result<String, String> {
 }
 
 /// Fetch usage data from Anthropic's OAuth API.
+/// Responses are cached for 30 seconds to prevent 429 errors when multiple
+/// components or re-renders trigger concurrent requests.
 #[tauri::command]
 pub async fn get_claude_usage() -> Result<UsageData, String> {
+    // Return cached response if still fresh
+    if let Ok(guard) = USAGE_CACHE.lock() {
+        if let Some((fetched_at, ttl, ref data)) = *guard {
+            if fetched_at.elapsed().as_secs() < ttl {
+                log::debug!(
+                    "Returning cached usage data (age: {}s, ttl: {}s)",
+                    fetched_at.elapsed().as_secs(),
+                    ttl
+                );
+                return Ok(data.clone());
+            }
+        }
+    }
+
+    let result = fetch_usage_from_api().await;
+
+    // Cache successful responses (and auth errors, since those won't change quickly)
+    if let Ok(ref data) = result {
+        if let Ok(mut guard) = USAGE_CACHE.lock() {
+            *guard = Some((Instant::now(), CACHE_TTL_SECS, data.clone()));
+        }
+    }
+
+    result
+}
+
+/// Actually fetch usage data from the API (uncached).
+async fn fetch_usage_from_api() -> Result<UsageData, String> {
     let token = match get_access_token().await {
         Ok(t) => t,
         Err(e) => {
@@ -232,6 +269,26 @@ pub async fn get_claude_usage() -> Result<UsageData, String> {
         });
     }
 
+    // Handle rate limiting (429) — extend cache TTL to avoid hammering the API
+    if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        let retry_after = response
+            .headers()
+            .get("retry-after")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse::<u64>().ok())
+            .unwrap_or(60);
+        log::warn!("Usage API returned 429, retry after {}s", retry_after);
+        let data = UsageData {
+            error_message: Some(format!("Rate limited, retrying in {}s", retry_after)),
+            ..Default::default()
+        };
+        // Cache the 429 response using retry-after as TTL so we don't retry before the server allows
+        if let Ok(mut guard) = USAGE_CACHE.lock() {
+            *guard = Some((Instant::now(), retry_after, data.clone()));
+        }
+        return Ok(data);
+    }
+
     if !response.status().is_success() {
         let status = response.status();
         log::warn!("Usage API returned {}", status);
@@ -249,7 +306,11 @@ pub async fn get_claude_usage() -> Result<UsageData, String> {
     // Helper to convert utilization to percentage
     // API returns 0-1 (multiply by 100) or already 0-100 (use as-is)
     let to_percent = |val: f64| {
-        if val > 1.0 { val } else { val * 100.0 }
+        if val > 1.0 {
+            val
+        } else {
+            val * 100.0
+        }
     };
 
     let usage = UsageData {
