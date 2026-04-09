@@ -105,7 +105,7 @@ const STATUS_LABEL: Record<BackendSessionStatus, string> = {
 /* ================================================================ */
 
 export function Sidebar({ collapsed, theme, onToggleTheme }: SidebarProps) {
-  const [activeTab, setActiveTab] = useState<SidebarTab>("config");
+  const [activeTab, setActiveTab] = useState<SidebarTab>("files");
 
   return (
     <aside
@@ -119,18 +119,6 @@ export function Sidebar({ collapsed, theme, onToggleTheme }: SidebarProps) {
       <div className="flex min-w-0 shrink-0 border-b border-maestro-border">
         <button
           type="button"
-          onClick={() => setActiveTab("config")}
-          className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold tracking-wide uppercase ${
-            activeTab === "config"
-              ? "border-b-2 border-maestro-accent text-maestro-accent"
-              : "text-maestro-muted hover:text-maestro-text"
-          }`}
-        >
-          <Settings size={12} />
-          Config
-        </button>
-        <button
-          type="button"
           onClick={() => setActiveTab("files")}
           className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold tracking-wide uppercase ${
             activeTab === "files"
@@ -140,6 +128,18 @@ export function Sidebar({ collapsed, theme, onToggleTheme }: SidebarProps) {
         >
           <FolderGit2 size={12} />
           Files
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("config")}
+          className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold tracking-wide uppercase ${
+            activeTab === "config"
+              ? "border-b-2 border-maestro-accent text-maestro-accent"
+              : "text-maestro-muted hover:text-maestro-text"
+          }`}
+        >
+          <Settings size={12} />
+          Config
         </button>
         <button
           type="button"
@@ -157,10 +157,10 @@ export function Sidebar({ collapsed, theme, onToggleTheme }: SidebarProps) {
 
       {/* Scrollable content */}
       <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-2.5 py-3">
-        {activeTab === "config" ? (
-          <ConfigTab theme={theme} onToggleTheme={onToggleTheme} />
-        ) : activeTab === "files" ? (
+        {activeTab === "files" ? (
           <FileExplorer />
+        ) : activeTab === "config" ? (
+          <ConfigTab theme={theme} onToggleTheme={onToggleTheme} />
         ) : (
           <ProcessesTab />
         )}
