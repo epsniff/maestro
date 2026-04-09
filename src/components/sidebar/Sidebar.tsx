@@ -42,7 +42,7 @@ import { McpServerEditorModal } from "@/components/mcp";
 import { DynamicIcon } from "@/components/quickactions/DynamicIcon";
 import { QuickActionsManager } from "@/components/quickactions/QuickActionsManager";
 import { HotkeySettingsModal, MaestroSettingsModal } from "@/components/settings";
-import { Tamagotchi } from "@/components/tamagotchi";
+
 import { CliSettingsModal } from "@/components/terminal/CliSettingsModal";
 import { TerminalSettingsModal } from "@/components/terminal/TerminalSettingsModal";
 import { type ClaudeMdStatus, checkClaudeMd } from "@/lib/claudemd";
@@ -166,8 +166,6 @@ export function Sidebar({ collapsed, theme, onToggleTheme }: SidebarProps) {
         )}
       </div>
 
-      {/* Tamagotchi widget - fixed footer */}
-      {!collapsed && <Tamagotchi />}
     </aside>
   );
 }

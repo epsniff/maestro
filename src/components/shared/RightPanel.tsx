@@ -1,6 +1,7 @@
 import {
   Activity,
   AlertCircle,
+  BarChart3,
   ChevronDown,
   GitBranch,
   GitFork,
@@ -10,6 +11,8 @@ import {
   Terminal,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useUsageStore } from "@/stores/useUsageStore";
+import { formatResetTime } from "@/lib/usageParser";
 import type { GraphNode } from "@/lib/graphLayout";
 import { useGitStore } from "@/stores/useGitStore";
 import { useGitHubStore } from "@/stores/useGitHubStore";
@@ -449,6 +452,9 @@ function StatusTab({
         />
       )}
 
+      {/* Claude usage card */}
+      <UsageCard isVisible={isVisible} />
+
       {/* Status legend card */}
       <div className={cardClass}>
         <div className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-maestro-muted">
@@ -459,6 +465,90 @@ function StatusTab({
           <StatusLegend direction="vertical" />
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ================================================================ */
+/*  USAGE CARD                                                       */
+/* ================================================================ */
+
+function UsageCard({ isVisible }: { isVisible: boolean }) {
+  const { usage, isLoading, needsAuth, fetchUsage, startPolling } = useUsageStore();
+
+  // Only poll when the Status tab is visible and the panel is not collapsed
+  useEffect(() => {
+    if (!isVisible) return;
+    const cleanup = startPolling();
+    return cleanup;
+  }, [isVisible, startPolling]);
+
+  const sessionPercent = usage?.sessionPercent ?? 0;
+  const weeklyPercent = usage?.weeklyPercent ?? 0;
+  const sessionResetTime = formatResetTime(usage?.sessionResetsAt ?? null);
+  const weeklyResetTime = formatResetTime(usage?.weeklyResetsAt ?? null);
+
+  return (
+    <div className={cardClass}>
+      <div className="flex items-center gap-2 mb-2">
+        <BarChart3 className="h-4 w-4 text-maestro-accent" />
+        <span className="text-xs font-semibold text-maestro-text">Claude Usage</span>
+        <button
+          type="button"
+          onClick={fetchUsage}
+          disabled={isLoading}
+          className="ml-auto rounded p-0.5 hover:bg-maestro-border/40"
+          title="Refresh usage"
+        >
+          <RefreshCw className={`h-3 w-3 text-maestro-muted ${isLoading ? "animate-spin" : ""}`} />
+        </button>
+      </div>
+
+      {needsAuth ? (
+        <div className="text-[10px] text-maestro-muted">
+          Run <code className="rounded bg-maestro-border/50 px-1 py-0.5 font-mono">claude</code> to activate usage tracking
+        </div>
+      ) : (
+        <>
+          {/* Daily usage bar */}
+          <div className="mb-2">
+            <div className="flex justify-between text-[10px] text-maestro-muted mb-1">
+              <span>Daily (5h)</span>
+              <span title={sessionResetTime ? `Resets ${sessionResetTime}` : undefined}>
+                {Math.round(sessionPercent)}%
+              </span>
+            </div>
+            <div className="h-2 bg-maestro-border/60 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-maestro-accent rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(100, sessionPercent)}%` }}
+              />
+            </div>
+            {sessionResetTime && (
+              <div className="text-[9px] text-maestro-muted mt-0.5">Resets {sessionResetTime}</div>
+            )}
+          </div>
+
+          {/* Weekly usage bar */}
+          <div>
+            <div className="flex justify-between text-[10px] text-maestro-muted mb-1">
+              <span>Weekly (7d)</span>
+              <span title={weeklyResetTime ? `Resets ${weeklyResetTime}` : undefined}>
+                {Math.round(weeklyPercent)}%
+              </span>
+            </div>
+            <div className="h-2 bg-maestro-border/60 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-maestro-green rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(100, weeklyPercent)}%` }}
+              />
+            </div>
+            {weeklyResetTime && (
+              <div className="text-[9px] text-maestro-muted mt-0.5">Resets {weeklyResetTime}</div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
