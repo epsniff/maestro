@@ -29,7 +29,7 @@
     {
       "id": "add-delete-file-context-menu",
       "title": "Add 'Delete' option to right-click context menu on files",
-      "status": "pending",
+      "status": "in_progress",
       "description": "Right-clicking a file in the FileExplorer should offer a Delete option with a confirmation dialog. Needs a backend command to delete files and frontend UI for the menu item + confirmation.",
       "files": ["src/components/sidebar/FileExplorer.tsx", "src-tauri/src/commands/filesystem.rs"],
       "instructions": "instructions/04-add-delete-file.md"
@@ -117,5 +117,5 @@
     }
   ],
   "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path"],
-  "current_item": null
+  "current_item": "add-delete-file-context-menu"
 }
