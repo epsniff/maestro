@@ -1,8 +1,8 @@
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { arrayMove } from "@dnd-kit/sortable";
 import { invoke } from "@tauri-apps/api/core";
+import { LazyStore } from "@tauri-apps/plugin-store";
 import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
-import { arrayMove } from "@dnd-kit/sortable";
 import { killSession } from "@/lib/terminal";
 import { useSessionStore } from "@/stores/useSessionStore";
 
@@ -11,12 +11,14 @@ import { useSessionStore } from "@/stores/useSessionStore";
 /** The type of workspace - single repo, multi-repo, or non-git. */
 export type WorkspaceType = "single-repo" | "multi-repo" | "non-git";
 
-/** Information about a detected git repository within a workspace. */
+/** Information about a detected repository or directory within a workspace. */
 export interface RepositoryInfo {
   /** Absolute path to the repository root. */
   path: string;
   /** Display name (folder name). */
   name: string;
+  /** Whether this directory is a git repository. */
+  isGitRepo: boolean;
   /** Current branch name (if available). */
   currentBranch: string | null;
   /** Primary remote URL (origin, or first remote if no origin). */
@@ -228,18 +230,19 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
             .getState()
             .sessions.filter(
               (session) =>
-                session.kind === "Terminal" && tabToClose.sessionIds.includes(session.id)
+                session.kind === "Terminal" && tabToClose.sessionIds.includes(session.id),
             )
             .map((session) => session.id);
 
-          Promise.allSettled(terminalSessionIds.map((sessionId) => killSession(sessionId)))
-            .then((results) => {
+          Promise.allSettled(terminalSessionIds.map((sessionId) => killSession(sessionId))).then(
+            (results) => {
               for (const result of results) {
                 if (result.status === "rejected") {
                   console.error("Failed to kill session on tab close:", result.reason);
                 }
               }
-            });
+            },
+          );
         }
 
         const remaining = get().tabs.filter((t) => t.id !== id);
@@ -263,7 +266,7 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
           tabs: get().tabs.map((t) =>
             t.id === tabId && !t.sessionIds.includes(sessionId)
               ? { ...t, sessionIds: [...t.sessionIds, sessionId] }
-              : t
+              : t,
           ),
         });
       },
@@ -273,16 +276,14 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
           tabs: get().tabs.map((t) =>
             t.id === tabId
               ? { ...t, sessionIds: t.sessionIds.filter((id) => id !== sessionId) }
-              : t
+              : t,
           ),
         });
       },
 
       setSessionsLaunched: (tabId: string, launched: boolean) => {
         set({
-          tabs: get().tabs.map((t) =>
-            t.id === tabId ? { ...t, sessionsLaunched: launched } : t
-          ),
+          tabs: get().tabs.map((t) => (t.id === tabId ? { ...t, sessionsLaunched: launched } : t)),
         });
       },
 
@@ -292,9 +293,7 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
 
       setSelectedRepo: (tabId: string, repoPath: string) => {
         set({
-          tabs: get().tabs.map((t) =>
-            t.id === tabId ? { ...t, selectedRepoPath: repoPath } : t
-          ),
+          tabs: get().tabs.map((t) => (t.id === tabId ? { ...t, selectedRepoPath: repoPath } : t)),
         });
       },
 
@@ -312,16 +311,14 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
                     repositories[0]?.path ??
                     null,
                 }
-              : t
+              : t,
           ),
         });
       },
 
       setWorktreeBasePath: (tabId: string, path: string | null) => {
         set({
-          tabs: get().tabs.map((t) =>
-            t.id === tabId ? { ...t, worktreeBasePath: path } : t
-          ),
+          tabs: get().tabs.map((t) => (t.id === tabId ? { ...t, worktreeBasePath: path } : t)),
         });
       },
 

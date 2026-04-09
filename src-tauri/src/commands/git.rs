@@ -1,14 +1,19 @@
 use std::path::PathBuf;
 
-use crate::git::{BranchInfo, CommitInfo, FileChange, Git, GitError, GitUserConfig, RemoteInfo, WorktreeInfo};
+use crate::git::{
+    BranchInfo, CommitInfo, FileChange, Git, GitError, GitUserConfig, RemoteInfo, WorktreeInfo,
+};
 
-/// Information about a detected git repository within a workspace.
+/// Information about a detected repository or directory within a workspace.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct RepositoryInfo {
     /// Absolute path to the repository root.
     pub path: String,
     /// Display name (folder name).
     pub name: String,
+    /// Whether this directory is a git repository.
+    #[serde(rename = "isGitRepo")]
+    pub is_git_repo: bool,
     /// Current branch name (if available).
     #[serde(rename = "currentBranch")]
     pub current_branch: Option<String>,
@@ -75,12 +80,8 @@ pub async fn git_worktree_add(
     validate_repo_path(&repo_path)?;
     let git = Git::new(&repo_path);
     let wt_path = PathBuf::from(&path);
-    git.worktree_add(
-        &wt_path,
-        new_branch.as_deref(),
-        checkout_ref.as_deref(),
-    )
-    .await
+    git.worktree_add(&wt_path, new_branch.as_deref(), checkout_ref.as_deref())
+        .await
 }
 
 /// Exposes `Git::worktree_remove` to the frontend.
@@ -128,7 +129,8 @@ pub async fn git_create_branch(
 ) -> Result<(), GitError> {
     validate_repo_path(&repo_path)?;
     let git = Git::new(&repo_path);
-    git.create_branch(&branch_name, start_point.as_deref()).await
+    git.create_branch(&branch_name, start_point.as_deref())
+        .await
 }
 
 /// Returns the list of files changed in a specific commit.
@@ -174,11 +176,7 @@ pub async fn git_list_remotes(repo_path: String) -> Result<Vec<RemoteInfo>, GitE
 
 /// Adds a new remote with the given name and URL.
 #[tauri::command]
-pub async fn git_add_remote(
-    repo_path: String,
-    name: String,
-    url: String,
-) -> Result<(), GitError> {
+pub async fn git_add_remote(repo_path: String, name: String, url: String) -> Result<(), GitError> {
     validate_repo_path(&repo_path)?;
     let git = Git::new(&repo_path);
     git.add_remote(&name, &url).await
@@ -332,13 +330,11 @@ fn detect_repos_recursive<'a>(
 
             // Get primary remote URL (prefer "origin", fall back to first remote)
             let remote_url = match git.list_remotes().await {
-                Ok(remotes) => {
-                    remotes
-                        .iter()
-                        .find(|r| r.name == "origin")
-                        .or_else(|| remotes.first())
-                        .map(|r| r.url.clone())
-                }
+                Ok(remotes) => remotes
+                    .iter()
+                    .find(|r| r.name == "origin")
+                    .or_else(|| remotes.first())
+                    .map(|r| r.url.clone()),
                 Err(_) => None,
             };
 
@@ -348,10 +344,23 @@ fn detect_repos_recursive<'a>(
                     .file_name()
                     .map(|n| n.to_string_lossy().to_string())
                     .unwrap_or_else(|| dir.to_string_lossy().to_string()),
+                is_git_repo: true,
                 current_branch,
                 remote_url,
             });
             // Continue scanning - there may be nested repos (submodules, monorepo packages, etc.)
+        } else if depth == 1 {
+            // Include immediate non-git directories so they appear in the workspace selector
+            repos.push(RepositoryInfo {
+                path: dir.to_string_lossy().to_string(),
+                name: dir
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| dir.to_string_lossy().to_string()),
+                is_git_repo: false,
+                current_branch: None,
+                remote_url: None,
+            });
         }
 
         // Read directory entries

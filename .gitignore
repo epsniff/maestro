@@ -69,3 +69,6 @@ website/.jekyll-metadata
 # roam code context index
 .roam/
 .worktrees
+
+# Langfuse telemetry
+.langfuse/
