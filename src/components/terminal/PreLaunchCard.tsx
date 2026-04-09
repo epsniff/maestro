@@ -1670,8 +1670,17 @@ export function PreLaunchCard({
                       placeholder="Or paste a file path..."
                       value={filePathInput}
                       onChange={(e) => {
-                        setFilePathInput(e.target.value);
+                        const value = e.target.value;
+                        setFilePathInput(value);
                         setFilePathError(null);
+                        // Update slot.filePath on every change so the launch button enables immediately
+                        const trimmed = value.trim();
+                        if (trimmed && onSetFilePath) {
+                          const resolved = trimmed.startsWith("/")
+                            ? trimmed
+                            : `${projectPath}/${trimmed}`;
+                          onSetFilePath(resolved);
+                        }
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && filePathInput.trim()) {
