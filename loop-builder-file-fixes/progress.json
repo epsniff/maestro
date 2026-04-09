@@ -78,7 +78,7 @@
     {
       "id": "new-folder-context-menu",
       "title": "Add New Folder option to right-click context menu",
-      "status": "in_progress",
+      "status": "completed",
       "description": "Add a New Folder option to the FileExplorer context menu. Needs a create_directory backend command. Consistent UX with the New File feature.",
       "files": ["src/components/sidebar/FileExplorer.tsx", "src-tauri/src/commands/filesystem.rs"],
       "instructions": "instructions/08-new-folder.md"
@@ -116,6 +116,6 @@
       "instructions": "instructions/12-move-usage-to-status-tab.md"
     }
   ],
-  "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting", "codemirror-maestro-theme", "swap-tab-order-files-first", "rename-file-folder"],
-  "current_item": "new-folder-context-menu"
+  "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting", "codemirror-maestro-theme", "swap-tab-order-files-first", "rename-file-folder", "new-folder-context-menu"],
+  "current_item": null
 }
