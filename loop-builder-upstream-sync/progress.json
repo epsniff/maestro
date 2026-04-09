@@ -48,11 +48,11 @@
     {
       "id": "instance-id",
       "name": "Relax instance_id validation for reconnecting sessions",
-      "status": "pending",
+      "status": "done",
       "instruction_file": "loop-builder-upstream-sync/instructions/scope-instance-id.md",
       "type": "upstream-port",
-      "approach": null,
-      "notes": null
+      "approach": "reimplementation",
+      "notes": "Relaxed instance_id check in status_server.rs: known/registered sessions with wrong instance_id are accepted with a warning log. Unknown sessions still get 403."
     },
     {
       "id": "file-path-input",
@@ -73,8 +73,8 @@
       "notes": null
     }
   ],
-  "completed": ["upstream-216", "upstream-217", "upstream-220", "file-dragdrop", "stale-sessions"],
-  "iteration": 5,
+  "completed": ["upstream-216", "upstream-217", "upstream-220", "file-dragdrop", "stale-sessions", "instance-id"],
+  "iteration": 6,
   "pivot_count": 0,
   "max_pivots": 3
 }
