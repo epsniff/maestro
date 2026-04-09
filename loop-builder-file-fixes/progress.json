@@ -94,7 +94,7 @@
     {
       "id": "show-hidden-files-toggle",
       "title": "Add show/hide hidden files toggle in FileExplorer",
-      "status": "pending",
+      "status": "in_progress",
       "description": "Add a toggle button to the FileExplorer header to show/hide dotfiles and hardcoded hidden items (node_modules, .git, target, etc.). Hidden files shown dimmed when visible.",
       "files": ["src/components/sidebar/FileExplorer.tsx"],
       "instructions": "instructions/10-show-hidden-toggle.md"
@@ -117,5 +117,5 @@
     }
   ],
   "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting", "codemirror-maestro-theme", "swap-tab-order-files-first", "rename-file-folder", "new-folder-context-menu", "reveal-in-finder"],
-  "current_item": null
+  "current_item": "show-hidden-files-toggle"
 }
