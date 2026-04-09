@@ -1,8 +1,9 @@
 import { memo, useCallback, useMemo, useRef } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
-import { oneDark } from "@codemirror/theme-one-dark";
-import { keymap } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { tags } from "@lezer/highlight";
 import type { Extension } from "@codemirror/state";
 import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
@@ -19,6 +20,82 @@ import { java } from "@codemirror/lang-java";
 import { go } from "@codemirror/lang-go";
 import { php } from "@codemirror/lang-php";
 import { FileText, GripVertical, Loader2, Maximize2, Minimize2, Save, X } from "lucide-react";
+
+// ── Custom CodeMirror theme using Maestro CSS variables ──
+
+const maestroEditorTheme = EditorView.theme(
+  {
+    "&": {
+      backgroundColor: "rgb(var(--maestro-surface))",
+      color: "rgb(var(--maestro-text))",
+    },
+    ".cm-gutters": {
+      backgroundColor: "rgb(var(--maestro-bg))",
+      color: "rgb(var(--maestro-muted))",
+      borderRight: "1px solid rgb(var(--maestro-border))",
+    },
+    ".cm-activeLineGutter": {
+      backgroundColor: "rgb(var(--maestro-card))",
+    },
+    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
+      backgroundColor: "rgb(var(--maestro-accent) / 0.2)",
+    },
+    ".cm-activeLine": {
+      backgroundColor: "rgb(var(--maestro-card) / 0.5)",
+    },
+    ".cm-cursor, .cm-dropCursor": {
+      borderLeftColor: "rgb(var(--maestro-accent))",
+    },
+    "&.cm-focused .cm-matchingBracket": {
+      backgroundColor: "rgb(var(--maestro-accent) / 0.25)",
+      outline: "1px solid rgb(var(--maestro-accent) / 0.5)",
+    },
+    ".cm-searchMatch": {
+      backgroundColor: "rgb(var(--maestro-orange) / 0.3)",
+    },
+    ".cm-searchMatch.cm-searchMatch-selected": {
+      backgroundColor: "rgb(var(--maestro-orange) / 0.5)",
+    },
+    ".cm-foldPlaceholder": {
+      backgroundColor: "rgb(var(--maestro-card))",
+      borderColor: "rgb(var(--maestro-border))",
+      color: "rgb(var(--maestro-muted))",
+    },
+    ".cm-tooltip": {
+      backgroundColor: "rgb(var(--maestro-surface))",
+      border: "1px solid rgb(var(--maestro-border))",
+      color: "rgb(var(--maestro-text))",
+    },
+  },
+  { dark: true },
+);
+
+const maestroHighlightStyle = syntaxHighlighting(
+  HighlightStyle.define([
+    { tag: tags.keyword, color: "rgb(var(--maestro-purple))" },
+    { tag: [tags.name, tags.deleted, tags.character, tags.macroName], color: "rgb(var(--maestro-text))" },
+    { tag: [tags.function(tags.variableName), tags.labelName], color: "rgb(var(--maestro-accent))" },
+    { tag: [tags.propertyName], color: "rgb(var(--maestro-accent))" },
+    { tag: [tags.color, tags.constant(tags.name), tags.standard(tags.name)], color: "rgb(var(--maestro-orange))" },
+    { tag: [tags.definition(tags.name), tags.separator], color: "rgb(var(--maestro-text))" },
+    { tag: [tags.typeName, tags.className, tags.changed, tags.annotation, tags.self, tags.namespace],
+      color: "#e5c07b" },
+    { tag: [tags.number], color: "rgb(var(--maestro-orange))" },
+    { tag: [tags.operator, tags.operatorKeyword], color: "rgb(var(--maestro-purple))" },
+    { tag: [tags.url, tags.escape, tags.regexp, tags.link], color: "#56d4dd" },
+    { tag: [tags.string, tags.special(tags.string)], color: "rgb(var(--maestro-green))" },
+    { tag: [tags.meta], color: "rgb(var(--maestro-muted))" },
+    { tag: [tags.comment], color: "rgb(var(--maestro-muted))", fontStyle: "italic" },
+    { tag: tags.strong, fontWeight: "bold" },
+    { tag: tags.emphasis, fontStyle: "italic" },
+    { tag: tags.strikethrough, textDecoration: "line-through" },
+    { tag: tags.heading, fontWeight: "bold", color: "rgb(var(--maestro-accent))" },
+    { tag: tags.link, color: "rgb(var(--maestro-accent))", textDecoration: "underline" },
+    { tag: tags.invalid, color: "rgb(var(--maestro-red))" },
+  ]),
+);
+
+const maestroTheme: Extension = [maestroEditorTheme, maestroHighlightStyle];
 
 interface FileEditorViewProps {
   sessionId: number;
@@ -213,7 +290,7 @@ export const FileEditorView = memo(function FileEditorView({
             ref={cmRef}
             value={content}
             onChange={(val) => onChange(val)}
-            theme={oneDark}
+            theme={maestroTheme}
             basicSetup={{
               lineNumbers: true,
               foldGutter: true,
