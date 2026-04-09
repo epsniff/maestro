@@ -20,6 +20,11 @@
 - **Approach**: Installed 14 `@codemirror/lang-*` packages. Added `getLanguageExtension()` function with extension-based switch and special-case handling for extensionless files (Dockerfile, Makefile). Used `useMemo` keyed on `filePath` to avoid recreating the extensions array on every render (important per Item 5a lesson about CodeMirror re-initializing when extensions identity changes).
 - **Note**: The `editorExtensions` memo combines both the save keymap and the language extension into a single stable array, replacing the inline `[saveKeymap()]` that was recreated each render.
 
+## Item 5c: codemirror-maestro-theme
+- **Approach**: Created custom `EditorView.theme()` and `HighlightStyle.define()` using `rgb(var(--maestro-*))` CSS variable references. Both APIs generate CSS rules injected into the document, so CSS variables resolve correctly at render time.
+- **Note**: Maestro's CSS variables are RGB triplets (e.g. `26 26 30`), used as `rgb(var(--maestro-bg))` or with alpha as `rgb(var(--maestro-accent) / 0.2)`. The highlight style uses maestro vars for most tokens but falls back to hex for types (`#e5c07b`) and regex/urls (`#56d4dd`) where no suitable maestro var exists.
+- **Note**: The `@codemirror/theme-one-dark` package is no longer imported but remains in package.json as it's a peer dep of `@uiw/react-codemirror`. No need to remove it.
+
 ## Item 3: fix-open-file-paste-path
 - **Root cause**: The file path text input only called `onSetFilePath` (which updates `slot.filePath`) on Enter key press. The launch button checks `slot.filePath` (not the local input state), so pasting a path didn't enable the button until Enter was pressed.
 - **Fix**: Call `onSetFilePath` in the `onChange` handler on every input change, resolving relative paths against the project root. The Enter key handler still works as a "confirm and clear" action.
