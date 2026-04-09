@@ -34,6 +34,10 @@
 - **Approach**: `@tauri-apps/plugin-opener` was already installed and `revealItemInDir` was used in WorktreeCard. Simply imported it and added a context menu button. No backend changes needed.
 - **Note**: This was the simplest item so far — reusing existing infrastructure.
 
+## Item 12: show-hidden-files-toggle
+- **Approach**: Backend already had `show_hidden` param on `list_directory`. Added frontend toggle state, Eye/EyeOff button, and threaded `showHidden` through `FileTreeNode` props. Added `useEffect` to invalidate cached children when toggle changes so expanded subdirectories re-fetch.
+- **Note**: A frontend `HIDDEN_NAMES` set mirrors the backend one, used only for dimming logic (`opacity-50`). The actual filtering is backend-side.
+
 ## Item 3: fix-open-file-paste-path
 - **Root cause**: The file path text input only called `onSetFilePath` (which updates `slot.filePath`) on Enter key press. The launch button checks `slot.filePath` (not the local input state), so pasting a path didn't enable the button until Enter was pressed.
 - **Fix**: Call `onSetFilePath` in the `onChange` handler on every input change, resolving relative paths against the project root. The Enter key handler still works as a "confirm and clear" action.
