@@ -53,7 +53,7 @@
     {
       "id": "codemirror-maestro-theme",
       "title": "Integrate CodeMirror theme with Maestro CSS variables",
-      "status": "pending",
+      "status": "in_progress",
       "description": "Create a custom CodeMirror theme using Maestro's --maestro-* CSS variables so the editor blends seamlessly with the app's dark theme. Replace the default oneDark theme.",
       "files": ["src/components/session/FileEditorView.tsx", "src/styles/globals.css"],
       "instructions": "instructions/05c-theme-integration.md"
@@ -117,5 +117,5 @@
     }
   ],
   "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting"],
-  "current_item": null
+  "current_item": "codemirror-maestro-theme"
 }
