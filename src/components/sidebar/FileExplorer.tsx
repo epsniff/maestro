@@ -4,6 +4,8 @@ import {
   ChevronDown,
   ChevronRight,
   Copy,
+  Eye,
+  EyeOff,
   ExternalLink,
   File,
   FilePlus,
@@ -38,8 +40,19 @@ interface ContextMenuState {
   isDir: boolean;
 }
 
-async function listDirectory(path: string): Promise<DirEntry[]> {
-  return invoke<DirEntry[]>("list_directory", { path });
+/** Names hidden by default (must match backend HIDDEN_NAMES for dimming). */
+const HIDDEN_NAMES = new Set([
+  "node_modules", ".git", "target", "dist", "build",
+  "__pycache__", ".venv", "venv", ".cargo", ".next",
+  ".DS_Store", "Thumbs.db",
+]);
+
+function isHiddenEntry(name: string): boolean {
+  return name.startsWith(".") || HIDDEN_NAMES.has(name);
+}
+
+async function listDirectory(path: string, showHidden = false): Promise<DirEntry[]> {
+  return invoke<DirEntry[]>("list_directory", { path, showHidden });
 }
 
 function FileIcon({ extension }: { extension: string }) {
@@ -64,6 +77,7 @@ function FileTreeNode({
   renamingPath,
   onRenameSubmit,
   onRenameCancel,
+  showHidden,
 }: {
   entry: DirEntry;
   parentPath: string;
@@ -73,6 +87,7 @@ function FileTreeNode({
   renamingPath: string | null;
   onRenameSubmit: (oldPath: string, newName: string) => void;
   onRenameCancel: () => void;
+  showHidden: boolean;
 }) {
   const fullPath = `${parentPath}/${entry.name}`;
   const isRenaming = renamingPath === fullPath;
@@ -109,7 +124,7 @@ function FileTreeNode({
     if (state.children === null) {
       setState((s) => ({ ...s, loading: true }));
       try {
-        const children = await listDirectory(fullPath);
+        const children = await listDirectory(fullPath, showHidden);
         setState({ expanded: true, children, loading: false });
       } catch {
         setState((s) => ({ ...s, loading: false }));
@@ -117,7 +132,15 @@ function FileTreeNode({
     } else {
       setState((s) => ({ ...s, expanded: true }));
     }
-  }, [entry.isDir, fullPath, state.expanded, state.children]);
+  }, [entry.isDir, fullPath, state.expanded, state.children, showHidden]);
+
+  // Re-fetch children when showHidden changes
+  useEffect(() => {
+    if (state.children !== null) {
+      setState((s) => ({ ...s, children: null }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showHidden]);
 
   const handleDoubleClick = useCallback(() => {
     if (!entry.isDir) {
@@ -132,6 +155,8 @@ function FileTreeNode({
     [fullPath, entry.isDir, onContextMenu],
   );
 
+  const hidden = isHiddenEntry(entry.name);
+
   return (
     <div>
       <button
@@ -139,7 +164,7 @@ function FileTreeNode({
         onClick={entry.isDir ? toggleExpand : undefined}
         onDoubleClick={handleDoubleClick}
         onContextMenu={handleCtxMenu}
-        className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-left text-xs hover:bg-maestro-border/30"
+        className={`flex w-full items-center gap-1 rounded px-1 py-0.5 text-left text-xs hover:bg-maestro-border/30${hidden ? " opacity-50" : ""}`}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
       >
         {entry.isDir ? (
@@ -213,6 +238,7 @@ function FileTreeNode({
               renamingPath={renamingPath}
               onRenameSubmit={onRenameSubmit}
               onRenameCancel={onRenameCancel}
+              showHidden={showHidden}
             />
           ))}
         </div>
@@ -230,6 +256,7 @@ export function FileExplorer() {
   const [entries, setEntries] = useState<DirEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showHidden, setShowHidden] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<ContextMenuState | null>(null);
   const ctxMenuRef = useRef<HTMLDivElement>(null);
   const [newFileDir, setNewFileDir] = useState<string | null>(null);
@@ -250,11 +277,11 @@ export function FileExplorer() {
     }
     setLoading(true);
     setError(null);
-    listDirectory(projectPath)
+    listDirectory(projectPath, showHidden)
       .then(setEntries)
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));
-  }, [projectPath]);
+  }, [projectPath, showHidden]);
 
   // Close context menu on click outside
   useEffect(() => {
@@ -269,8 +296,8 @@ export function FileExplorer() {
 
   const refreshRoot = useCallback(() => {
     if (!projectPath) return;
-    listDirectory(projectPath).then(setEntries).catch(() => {});
-  }, [projectPath]);
+    listDirectory(projectPath, showHidden).then(setEntries).catch(() => {});
+  }, [projectPath, showHidden]);
 
   // Focus the new file input when it appears
   useEffect(() => {
@@ -450,6 +477,16 @@ export function FileExplorer() {
 
   return (
     <div className="space-y-1">
+      <div className="flex items-center justify-end px-2">
+        <button
+          type="button"
+          onClick={() => setShowHidden((v) => !v)}
+          title={showHidden ? "Hide hidden files" : "Show hidden files"}
+          className="rounded p-0.5 text-maestro-muted hover:bg-maestro-border/40 hover:text-maestro-text"
+        >
+          {showHidden ? <EyeOff size={14} /> : <Eye size={14} />}
+        </button>
+      </div>
       {loading ? (
         <div className="flex items-center justify-center py-4">
           <Loader2 size={16} className="animate-spin text-maestro-muted" />
@@ -470,6 +507,7 @@ export function FileExplorer() {
             renamingPath={renamingPath}
             onRenameSubmit={handleRenameSubmit}
             onRenameCancel={handleRenameCancel}
+            showHidden={showHidden}
           />
         ))
       )}
