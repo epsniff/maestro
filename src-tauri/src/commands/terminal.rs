@@ -210,7 +210,9 @@ pub async fn get_session_process_tree(
         None => return Ok(None),
     };
 
-    Ok(crate::core::process_tree::get_process_tree(session_id, root_pid))
+    Ok(crate::core::process_tree::get_process_tree(
+        session_id, root_pid,
+    ))
 }
 
 /// Returns process trees for all active sessions.
@@ -231,10 +233,7 @@ pub async fn get_all_process_trees(
 /// Sends SIGTERM first, waits up to 2 seconds, then SIGKILL if still alive.
 /// Will refuse to kill root session processes (use kill_session for that).
 #[tauri::command]
-pub async fn kill_process(
-    state: State<'_, ProcessManager>,
-    pid: u32,
-) -> Result<(), String> {
+pub async fn kill_process(state: State<'_, ProcessManager>, pid: u32) -> Result<(), String> {
     let pm = state.inner().clone();
     let session_root_pids: Vec<i32> = pm
         .get_all_session_pids()
@@ -284,13 +283,30 @@ pub async fn save_pasted_image(data: Vec<u8>, media_type: String) -> Result<Stri
     Ok(path.to_string_lossy().into_owned())
 }
 
-/// Kills all active PTY sessions.
+/// Kills all active PTY sessions and clears session state.
 ///
 /// Used to clean up orphaned sessions when the frontend reloads.
-/// Returns the number of sessions that were killed.
+/// Also clears SessionManager records and unregisters from the status server
+/// to prevent ghost sessions and resource leaks.
+/// Returns the number of PTY sessions that were killed.
 #[tauri::command]
-pub async fn kill_all_sessions(state: State<'_, ProcessManager>) -> Result<u32, PtyError> {
-    let pm = state.inner().clone();
+pub async fn kill_all_sessions(
+    process_manager: State<'_, ProcessManager>,
+    session_manager: State<'_, SessionManager>,
+    status_server: State<'_, Arc<StatusServer>>,
+) -> Result<u32, PtyError> {
+    // Clear all session records and unregister from status server
+    let removed = session_manager.clear_all();
+    for session in &removed {
+        status_server.unregister_session(session.id).await;
+    }
+    log::debug!(
+        "Cleared {} session records during kill_all_sessions",
+        removed.len()
+    );
+
+    // Kill all PTY processes
+    let pm = process_manager.inner().clone();
     pm.kill_all_sessions().await
 }
 

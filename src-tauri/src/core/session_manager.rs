@@ -207,6 +207,15 @@ impl SessionManager {
             .collect()
     }
 
+    /// Removes all sessions. Returns the removed configs.
+    /// Used during mass cleanup (e.g., when frontend reloads).
+    pub fn clear_all(&self) -> Vec<SessionConfig> {
+        let ids: Vec<u32> = self.sessions.iter().map(|e| *e.key()).collect();
+        ids.into_iter()
+            .filter_map(|id| self.sessions.remove(&id).map(|(_, v)| v))
+            .collect()
+    }
+
     /// Removes all sessions for a project. Returns the removed configs.
     /// Useful when closing a project tab.
     pub fn remove_sessions_for_project(&self, project_path: &str) -> Vec<SessionConfig> {

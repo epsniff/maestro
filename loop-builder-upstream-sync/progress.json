@@ -39,11 +39,11 @@
     {
       "id": "stale-sessions",
       "name": "Fix stale session cleanup on kill_all_sessions",
-      "status": "pending",
+      "status": "done",
       "instruction_file": "loop-builder-upstream-sync/instructions/scope-stale-sessions.md",
       "type": "upstream-port",
-      "approach": null,
-      "notes": null
+      "approach": "reimplementation",
+      "notes": "Added clear_all() to SessionManager. Updated kill_all_sessions command to clear session records and unregister from status server alongside PTY cleanup."
     },
     {
       "id": "instance-id",
@@ -73,8 +73,8 @@
       "notes": null
     }
   ],
-  "completed": ["upstream-216", "upstream-217", "upstream-220", "file-dragdrop"],
-  "iteration": 4,
+  "completed": ["upstream-216", "upstream-217", "upstream-220", "file-dragdrop", "stale-sessions"],
+  "iteration": 5,
   "pivot_count": 0,
   "max_pivots": 3
 }
