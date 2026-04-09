@@ -30,6 +30,10 @@
 - **Note**: `setSelectionRange(0, dotIdx)` selects filename without extension for a nicer UX. Blur triggers commit (same as Enter) to avoid losing edits.
 - **Note**: Open file sessions referencing the old path are updated via `useSessionStore.getState().updateSession()`.
 
+## Item 11: reveal-in-finder
+- **Approach**: `@tauri-apps/plugin-opener` was already installed and `revealItemInDir` was used in WorktreeCard. Simply imported it and added a context menu button. No backend changes needed.
+- **Note**: This was the simplest item so far — reusing existing infrastructure.
+
 ## Item 3: fix-open-file-paste-path
 - **Root cause**: The file path text input only called `onSetFilePath` (which updates `slot.filePath`) on Enter key press. The launch button checks `slot.filePath` (not the local input state), so pasting a path didn't enable the button until Enter was pressed.
 - **Fix**: Call `onSetFilePath` in the `onChange` handler on every input change, resolving relative paths against the project root. The Enter key handler still works as a "confirm and clear" action.

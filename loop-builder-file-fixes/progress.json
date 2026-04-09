@@ -86,7 +86,7 @@
     {
       "id": "reveal-in-finder",
       "title": "Add Reveal in Finder to right-click context menu",
-      "status": "in_progress",
+      "status": "completed",
       "description": "Add a Reveal in Finder option to the FileExplorer context menu that opens the system file manager and highlights the selected file. Reuse existing revealItemInDir approach from WorktreeCard.",
       "files": ["src/components/sidebar/FileExplorer.tsx"],
       "instructions": "instructions/09-reveal-in-finder.md"
@@ -116,6 +116,6 @@
       "instructions": "instructions/12-move-usage-to-status-tab.md"
     }
   ],
-  "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting", "codemirror-maestro-theme", "swap-tab-order-files-first", "rename-file-folder", "new-folder-context-menu"],
-  "current_item": "reveal-in-finder"
+  "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting", "codemirror-maestro-theme", "swap-tab-order-files-first", "rename-file-folder", "new-folder-context-menu", "reveal-in-finder"],
+  "current_item": null
 }
