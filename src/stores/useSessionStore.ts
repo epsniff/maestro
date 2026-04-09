@@ -75,6 +75,8 @@ interface SessionState {
   error: string | null;
   /** The session ID of the currently focused terminal (global, cross-component). */
   focusedSessionId: number | null;
+  /** Transient: set by FileExplorer, consumed by TerminalGrid to open a file as a session. */
+  pendingFileOpen: { projectPath: string; filePath: string } | null;
   fetchSessions: () => Promise<void>;
   fetchSessionsForProject: (projectPath: string) => Promise<void>;
   addSession: (session: SessionConfig) => void;
@@ -84,6 +86,8 @@ interface SessionState {
   getSessionsByProject: (projectPath: string) => SessionConfig[];
   renameSession: (sessionId: number, name: string | null) => Promise<void>;
   setFocusedSessionId: (sessionId: number | null) => void;
+  setPendingFileOpen: (request: { projectPath: string; filePath: string }) => void;
+  clearPendingFileOpen: () => void;
   initListeners: () => Promise<UnlistenFn>;
 }
 
@@ -130,6 +134,7 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
   isLoading: false,
   error: null,
   focusedSessionId: null,
+  pendingFileOpen: null,
 
   fetchSessions: async () => {
     set({ isLoading: true, error: null });
@@ -298,6 +303,14 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
     if (get().focusedSessionId !== sessionId) {
       set({ focusedSessionId: sessionId });
     }
+  },
+
+  setPendingFileOpen: (request: { projectPath: string; filePath: string }) => {
+    set({ pendingFileOpen: request });
+  },
+
+  clearPendingFileOpen: () => {
+    set({ pendingFileOpen: null });
   },
 
   getSessionsByProject: (projectPath: string) => {

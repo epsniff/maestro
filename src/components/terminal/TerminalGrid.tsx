@@ -1720,6 +1720,61 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
     clearPendingTemplate();
   }, [pendingTemplate, clearPendingTemplate, focusedSlotId, orderedSlotIds]);
 
+  // Apply pending file-open request from the sidebar FileExplorer.
+  // Creates a new OpenFile slot with the file pre-filled and launches it.
+  const pendingFileOpen = useSessionStore((s) => s.pendingFileOpen);
+  const clearPendingFileOpen = useSessionStore((s) => s.clearPendingFileOpen);
+
+  useEffect(() => {
+    if (!pendingFileOpen) return;
+    // Only handle requests for this grid's project.
+    if (pendingFileOpen.projectPath !== projectPath) return;
+
+    // If we already have a slot for this file, focus it and bail.
+    const existingSlot = slotsRef.current.find(
+      (s) => s.mode === "OpenFile" && s.filePath === pendingFileOpen.filePath,
+    );
+    if (existingSlot) {
+      setFocusedSlotId(existingSlot.id);
+      if (existingSlot.sessionId !== null) {
+        setZoomedSlotId(existingSlot.id);
+      }
+      clearPendingFileOpen();
+      return;
+    }
+
+    if (slotsRef.current.length >= MAX_SESSIONS) {
+      setError(`Cannot open file: maximum of ${MAX_SESSIONS} sessions reached`);
+      clearPendingFileOpen();
+      return;
+    }
+
+    const newSlot: SessionSlot = {
+      id: generateSlotId(),
+      mode: "OpenFile",
+      branch: null,
+      newWorktreeBranch: "",
+      sessionId: null,
+      filePath: pendingFileOpen.filePath,
+      worktreePath: null,
+      worktreeWarning: null,
+      enabledMcpServers: [],
+      enabledSkills: [],
+      enabledPlugins: [],
+    };
+    setSlots((prev) => [...prev, newSlot]);
+    setLayoutTree(() => buildGridTree([...orderedSlotIds, newSlot.id]));
+    setFocusedSlotId(newSlot.id);
+
+    // Launch on the next tick so slotsRef sees the new slot.
+    const slotId = newSlot.id;
+    queueMicrotask(() => {
+      void launchSlot(slotId);
+    });
+
+    clearPendingFileOpen();
+  }, [pendingFileOpen, clearPendingFileOpen, projectPath, launchSlot, orderedSlotIds]);
+
   // DnD: sensors and drag-end handler for reordering panes
   const dndSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),

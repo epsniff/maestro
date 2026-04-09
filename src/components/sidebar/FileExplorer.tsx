@@ -376,22 +376,17 @@ export function FileExplorer() {
   }, []);
 
   const handleOpenFile = useCallback(
-    async (path: string) => {
-      // Check for existing file session
+    (path: string) => {
+      if (!projectPath) return;
+      // Check for existing file session — focus it rather than creating a new slot.
       const existing = sessions.find((s) => s.kind === "OpenFile" && s.file_path === path);
       if (existing) {
         useSessionStore.getState().setFocusedSessionId(existing.id);
         return;
       }
-      // Create new file session
-      try {
-        await invoke("create_file_session", {
-          projectPath,
-          filePath: path,
-        });
-      } catch (e) {
-        console.error("Failed to open file session:", e);
-      }
+      // Signal TerminalGrid (via the session store) to create a new OpenFile slot
+      // and launch it. TerminalGrid watches `pendingFileOpen` in a useEffect.
+      useSessionStore.getState().setPendingFileOpen({ projectPath, filePath: path });
     },
     [projectPath, sessions],
   );
