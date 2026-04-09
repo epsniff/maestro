@@ -21,7 +21,7 @@
     {
       "id": "fix-open-file-paste-path",
       "title": "Fix Open File session paste-path not enabling launch button",
-      "status": "pending",
+      "status": "in_progress",
       "description": "In the OpenFile session mode on PreLaunchCard, pasting a file path in the text input doesn't un-gray the Open button. The launch button checks !slot.filePath but the text input's onSetFilePath flow may not be updating the slot's filePath correctly.",
       "files": ["src/components/terminal/PreLaunchCard.tsx", "src/components/terminal/TerminalGrid.tsx"],
       "instructions": "instructions/03-fix-open-file-paste.md"
@@ -117,5 +117,5 @@
     }
   ],
   "completed": ["fix-copy-path", "add-new-file-context-menu"],
-  "current_item": null
+  "current_item": "fix-open-file-paste-path"
 }
