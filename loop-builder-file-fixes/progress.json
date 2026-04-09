@@ -62,7 +62,7 @@
     {
       "id": "swap-tab-order-files-first",
       "title": "Swap sidebar tab order — Files first, then Config",
-      "status": "in_progress",
+      "status": "completed",
       "description": "Move the Files tab to be the first (leftmost) sidebar tab, before Config. Change default active tab from 'config' to 'files'. Current order: Config | Files | Processes. New order: Files | Config | Processes.",
       "files": ["src/components/sidebar/Sidebar.tsx"],
       "instructions": "instructions/06-swap-tab-order.md"
@@ -116,6 +116,6 @@
       "instructions": "instructions/12-move-usage-to-status-tab.md"
     }
   ],
-  "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting", "codemirror-maestro-theme"],
-  "current_item": "swap-tab-order-files-first"
+  "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting", "codemirror-maestro-theme", "swap-tab-order-files-first"],
+  "current_item": null
 }
