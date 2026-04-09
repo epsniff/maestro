@@ -9,6 +9,7 @@ import {
   Folder,
   FolderOpen,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSessionStore } from "@/stores/useSessionStore";
@@ -260,6 +261,29 @@ export function FileExplorer() {
     [projectPath, sessions],
   );
 
+  const handleDelete = useCallback(
+    async (path: string, isDir: boolean) => {
+      const name = path.split("/").pop() ?? path;
+      const kind = isDir ? "folder" : "file";
+      const confirmed = window.confirm(
+        `Delete ${kind} "${name}"? This cannot be undone.`,
+      );
+      if (!confirmed) {
+        setCtxMenu(null);
+        return;
+      }
+      try {
+        await invoke("delete_path", { path, projectRoot: projectPath });
+        setCtxMenu(null);
+        refreshRoot();
+      } catch (e) {
+        console.error("Failed to delete:", e);
+        setCtxMenu(null);
+      }
+    },
+    [projectPath, refreshRoot],
+  );
+
   const handleContextMenu = useCallback((e: React.MouseEvent, path: string, isDir: boolean) => {
     e.preventDefault();
     setCtxMenu({ x: e.clientX, y: e.clientY, path, isDir });
@@ -347,6 +371,15 @@ export function FileExplorer() {
           >
             <Copy size={12} />
             Copy relative path
+          </button>
+          <div className="my-1 border-t border-maestro-border" />
+          <button
+            type="button"
+            onClick={() => handleDelete(ctxMenu.path, ctxMenu.isDir)}
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10"
+          >
+            <Trash2 size={12} />
+            Delete
           </button>
         </div>
       )}

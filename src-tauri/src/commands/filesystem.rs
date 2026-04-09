@@ -84,6 +84,33 @@ pub async fn list_directory(
     Ok(entries)
 }
 
+/// Deletes a file or directory at the given path.
+/// For files, uses `remove_file`. For directories, uses `remove_dir_all`.
+/// Refuses to delete if the path is not under `project_root`.
+#[tauri::command]
+pub async fn delete_path(path: String, project_root: String) -> Result<(), String> {
+    let target = std::path::Path::new(&path)
+        .canonicalize()
+        .map_err(|e| format!("Invalid path: {}", e))?;
+    let root = std::path::Path::new(&project_root)
+        .canonicalize()
+        .map_err(|e| format!("Invalid project root: {}", e))?;
+
+    if !target.starts_with(&root) || target == root {
+        return Err("Cannot delete paths outside the project root".to_string());
+    }
+
+    if target.is_dir() {
+        std::fs::remove_dir_all(&target)
+            .map_err(|e| format!("Failed to delete directory: {}", e))?;
+    } else {
+        std::fs::remove_file(&target)
+            .map_err(|e| format!("Failed to delete file: {}", e))?;
+    }
+
+    Ok(())
+}
+
 /// Creates an empty file at the given path. Errors if the file already exists.
 #[tauri::command]
 pub async fn create_file(path: String) -> Result<(), String> {

@@ -254,6 +254,7 @@ pub fn run() {
             // Filesystem commands
             commands::filesystem::list_directory,
             commands::filesystem::create_file,
+            commands::filesystem::delete_path,
             // Session commands (new)
             commands::session::get_sessions,
             commands::session::create_session,
