@@ -183,7 +183,10 @@ export function FileExplorer() {
   // Close context menu on click outside
   useEffect(() => {
     if (!ctxMenu) return;
-    const handler = () => setCtxMenu(null);
+    const handler = (e: MouseEvent) => {
+      if (ctxMenuRef.current && ctxMenuRef.current.contains(e.target as Node)) return;
+      setCtxMenu(null);
+    };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [ctxMenu]);
