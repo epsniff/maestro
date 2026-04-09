@@ -13,7 +13,7 @@
     {
       "id": "add-new-file-context-menu",
       "title": "Add 'New File' option to right-click context menu in file tab",
-      "status": "pending",
+      "status": "in_progress",
       "description": "Right-clicking in the FileExplorer should offer an option to create a new file. Currently the context menu only has 'Open as file session', 'Copy path', and 'Copy relative path'.",
       "files": ["src/components/sidebar/FileExplorer.tsx", "src-tauri/src/commands/filesystem.rs"],
       "instructions": "instructions/02-add-new-file.md"
@@ -117,5 +117,5 @@
     }
   ],
   "completed": ["fix-copy-path"],
-  "current_item": null
+  "current_item": "add-new-file-context-menu"
 }
