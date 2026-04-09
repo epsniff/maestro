@@ -1,0 +1,121 @@
+{
+  "pattern": "builder",
+  "task": "File explorer bug fixes and unified file viewer with syntax highlighting",
+  "items": [
+    {
+      "id": "fix-copy-path",
+      "title": "Fix right-click Copy Path / Copy Relative Path in FileExplorer",
+      "status": "completed",
+      "description": "The context menu options 'Copy path' and 'Copy relative path' in FileExplorer.tsx don't actually copy the file path to the clipboard. The copyToClipboard callback uses navigator.clipboard.writeText() but may not be wired correctly to the menu items.",
+      "files": ["src/components/sidebar/FileExplorer.tsx"],
+      "instructions": "instructions/01-fix-copy-path.md"
+    },
+    {
+      "id": "add-new-file-context-menu",
+      "title": "Add 'New File' option to right-click context menu in file tab",
+      "status": "pending",
+      "description": "Right-clicking in the FileExplorer should offer an option to create a new file. Currently the context menu only has 'Open as file session', 'Copy path', and 'Copy relative path'.",
+      "files": ["src/components/sidebar/FileExplorer.tsx", "src-tauri/src/commands/filesystem.rs"],
+      "instructions": "instructions/02-add-new-file.md"
+    },
+    {
+      "id": "fix-open-file-paste-path",
+      "title": "Fix Open File session paste-path not enabling launch button",
+      "status": "pending",
+      "description": "In the OpenFile session mode on PreLaunchCard, pasting a file path in the text input doesn't un-gray the Open button. The launch button checks !slot.filePath but the text input's onSetFilePath flow may not be updating the slot's filePath correctly.",
+      "files": ["src/components/terminal/PreLaunchCard.tsx", "src/components/terminal/TerminalGrid.tsx"],
+      "instructions": "instructions/03-fix-open-file-paste.md"
+    },
+    {
+      "id": "add-delete-file-context-menu",
+      "title": "Add 'Delete' option to right-click context menu on files",
+      "status": "pending",
+      "description": "Right-clicking a file in the FileExplorer should offer a Delete option with a confirmation dialog. Needs a backend command to delete files and frontend UI for the menu item + confirmation.",
+      "files": ["src/components/sidebar/FileExplorer.tsx", "src-tauri/src/commands/filesystem.rs"],
+      "instructions": "instructions/04-add-delete-file.md"
+    },
+    {
+      "id": "install-codemirror-basic-editor",
+      "title": "Install CodeMirror and replace textarea with basic editor",
+      "status": "pending",
+      "description": "Install @uiw/react-codemirror and @codemirror/theme-one-dark. Replace the plain textarea in FileEditorView with a CodeMirror editor in plain text mode with line numbers. Preserve save (Cmd/Ctrl+S) and dirty state tracking.",
+      "files": ["src/components/session/FileEditorView.tsx", "package.json"],
+      "instructions": "instructions/05a-install-codemirror.md"
+    },
+    {
+      "id": "add-language-detection-highlighting",
+      "title": "Add language detection and per-extension syntax highlighting",
+      "status": "pending",
+      "description": "Install CodeMirror language packages and build a file extension to language mapping. Wire it into the editor so files get automatic syntax highlighting based on their extension. Cover JS/TS, Rust, Python, JSON, HTML, CSS, Markdown, YAML, XML, SQL, C/C++, Java, Go, PHP.",
+      "files": ["src/components/session/FileEditorView.tsx", "package.json"],
+      "instructions": "instructions/05b-language-detection.md"
+    },
+    {
+      "id": "codemirror-maestro-theme",
+      "title": "Integrate CodeMirror theme with Maestro CSS variables",
+      "status": "pending",
+      "description": "Create a custom CodeMirror theme using Maestro's --maestro-* CSS variables so the editor blends seamlessly with the app's dark theme. Replace the default oneDark theme.",
+      "files": ["src/components/session/FileEditorView.tsx", "src/styles/globals.css"],
+      "instructions": "instructions/05c-theme-integration.md"
+    }
+    ,
+    {
+      "id": "swap-tab-order-files-first",
+      "title": "Swap sidebar tab order — Files first, then Config",
+      "status": "pending",
+      "description": "Move the Files tab to be the first (leftmost) sidebar tab, before Config. Change default active tab from 'config' to 'files'. Current order: Config | Files | Processes. New order: Files | Config | Processes.",
+      "files": ["src/components/sidebar/Sidebar.tsx"],
+      "instructions": "instructions/06-swap-tab-order.md"
+    },
+    {
+      "id": "rename-file-folder",
+      "title": "Add Rename option to right-click context menu",
+      "status": "pending",
+      "description": "Add a Rename option to the FileExplorer context menu. Clicking it puts the filename into an inline editable input. Enter commits, Escape cancels. Needs a rename_path backend command.",
+      "files": ["src/components/sidebar/FileExplorer.tsx", "src-tauri/src/commands/filesystem.rs"],
+      "instructions": "instructions/07-rename-file-folder.md"
+    },
+    {
+      "id": "new-folder-context-menu",
+      "title": "Add New Folder option to right-click context menu",
+      "status": "pending",
+      "description": "Add a New Folder option to the FileExplorer context menu. Needs a create_directory backend command. Consistent UX with the New File feature.",
+      "files": ["src/components/sidebar/FileExplorer.tsx", "src-tauri/src/commands/filesystem.rs"],
+      "instructions": "instructions/08-new-folder.md"
+    },
+    {
+      "id": "reveal-in-finder",
+      "title": "Add Reveal in Finder to right-click context menu",
+      "status": "pending",
+      "description": "Add a Reveal in Finder option to the FileExplorer context menu that opens the system file manager and highlights the selected file. Reuse existing revealItemInDir approach from WorktreeCard.",
+      "files": ["src/components/sidebar/FileExplorer.tsx"],
+      "instructions": "instructions/09-reveal-in-finder.md"
+    },
+    {
+      "id": "show-hidden-files-toggle",
+      "title": "Add show/hide hidden files toggle in FileExplorer",
+      "status": "pending",
+      "description": "Add a toggle button to the FileExplorer header to show/hide dotfiles and hardcoded hidden items (node_modules, .git, target, etc.). Hidden files shown dimmed when visible.",
+      "files": ["src/components/sidebar/FileExplorer.tsx"],
+      "instructions": "instructions/10-show-hidden-toggle.md"
+    },
+    {
+      "id": "word-wrap-toggle",
+      "title": "Add word wrap toggle to file editor",
+      "status": "pending",
+      "description": "Add a word wrap toggle button to the FileEditorView header. Uses CodeMirror's EditorView.lineWrapping extension. Requires item 5a (CodeMirror) to be complete first.",
+      "files": ["src/components/session/FileEditorView.tsx"],
+      "instructions": "instructions/11-word-wrap-toggle.md"
+    },
+    {
+      "id": "move-usage-to-status-tab",
+      "title": "Move Claude usage display from sidebar to Status tab in right panel",
+      "status": "pending",
+      "description": "Remove the Claude daily/weekly usage bars from the sidebar bottom-left and add them as a card in the right panel's Status tab. Only poll the usage API when the Status tab is active and the panel is not collapsed. Stop polling when switching tabs or collapsing. Cached data shows immediately when switching back.",
+      "files": ["src/components/sidebar/Sidebar.tsx", "src/components/shared/RightPanel.tsx", "src/stores/useUsageStore.ts", "src/components/tamagotchi/Tamagotchi.tsx"],
+      "instructions": "instructions/12-move-usage-to-status-tab.md"
+    }
+  ],
+  "completed": ["fix-copy-path"],
+  "current_item": null
+}
