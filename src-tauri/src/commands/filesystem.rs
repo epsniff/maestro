@@ -111,6 +111,46 @@ pub async fn delete_path(path: String, project_root: String) -> Result<(), Strin
     Ok(())
 }
 
+/// Renames a file or directory.
+/// Refuses to rename if old_path or new_path are outside `project_root`,
+/// or if new_path already exists.
+#[tauri::command]
+pub async fn rename_path(
+    old_path: String,
+    new_path: String,
+    project_root: String,
+) -> Result<(), String> {
+    let old = std::path::Path::new(&old_path)
+        .canonicalize()
+        .map_err(|e| format!("Invalid old path: {}", e))?;
+    let root = std::path::Path::new(&project_root)
+        .canonicalize()
+        .map_err(|e| format!("Invalid project root: {}", e))?;
+
+    if !old.starts_with(&root) {
+        return Err("Cannot rename paths outside the project root".to_string());
+    }
+
+    let new = std::path::Path::new(&new_path);
+    // new_path may not exist yet, but its parent must be inside project root
+    if let Some(parent) = new.parent() {
+        let canon_parent = parent
+            .canonicalize()
+            .map_err(|e| format!("Invalid new path parent: {}", e))?;
+        if !canon_parent.starts_with(&root) {
+            return Err("Cannot rename to a path outside the project root".to_string());
+        }
+    }
+
+    if new.exists() {
+        return Err(format!("Already exists: {}", new_path));
+    }
+
+    std::fs::rename(&old, &new).map_err(|e| format!("Failed to rename: {}", e))?;
+
+    Ok(())
+}
+
 /// Creates an empty file at the given path. Errors if the file already exists.
 #[tauri::command]
 pub async fn create_file(path: String) -> Result<(), String> {

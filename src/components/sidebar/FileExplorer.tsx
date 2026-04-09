@@ -9,6 +9,7 @@ import {
   Folder,
   FolderOpen,
   Loader2,
+  Pencil,
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -57,19 +58,42 @@ function FileTreeNode({
   depth,
   onOpenFile,
   onContextMenu,
+  renamingPath,
+  onRenameSubmit,
+  onRenameCancel,
 }: {
   entry: DirEntry;
   parentPath: string;
   depth: number;
   onOpenFile: (path: string) => void;
   onContextMenu: (e: React.MouseEvent, path: string, isDir: boolean) => void;
+  renamingPath: string | null;
+  onRenameSubmit: (oldPath: string, newName: string) => void;
+  onRenameCancel: () => void;
 }) {
   const fullPath = `${parentPath}/${entry.name}`;
+  const isRenaming = renamingPath === fullPath;
+  const [renameValue, setRenameValue] = useState(entry.name);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<TreeNodeState>({
     expanded: false,
     children: null,
     loading: false,
   });
+
+  // Focus rename input when it appears
+  useEffect(() => {
+    if (isRenaming && renameInputRef.current) {
+      renameInputRef.current.focus();
+      // Select filename without extension for files
+      const dotIdx = entry.name.lastIndexOf(".");
+      if (!entry.isDir && dotIdx > 0) {
+        renameInputRef.current.setSelectionRange(0, dotIdx);
+      } else {
+        renameInputRef.current.select();
+      }
+    }
+  }, [isRenaming, entry.name, entry.isDir]);
 
   const toggleExpand = useCallback(async () => {
     if (!entry.isDir) return;
@@ -136,7 +160,42 @@ function FileTreeNode({
             <FileIcon extension={entry.extension} />
           </>
         )}
-        <span className="truncate text-maestro-text">{entry.name}</span>
+        {isRenaming ? (
+          <input
+            ref={renameInputRef}
+            type="text"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.stopPropagation();
+                const trimmed = renameValue.trim();
+                if (trimmed && trimmed !== entry.name) {
+                  onRenameSubmit(fullPath, trimmed);
+                } else {
+                  onRenameCancel();
+                }
+              }
+              if (e.key === "Escape") {
+                e.stopPropagation();
+                onRenameCancel();
+              }
+            }}
+            onBlur={() => {
+              const trimmed = renameValue.trim();
+              if (trimmed && trimmed !== entry.name) {
+                onRenameSubmit(fullPath, trimmed);
+              } else {
+                onRenameCancel();
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            className="min-w-0 flex-1 rounded border border-maestro-accent bg-maestro-bg px-1 text-xs text-maestro-text outline-none"
+          />
+        ) : (
+          <span className="truncate text-maestro-text">{entry.name}</span>
+        )}
       </button>
       {state.expanded && state.children && (
         <div>
@@ -148,6 +207,9 @@ function FileTreeNode({
               depth={depth + 1}
               onOpenFile={onOpenFile}
               onContextMenu={onContextMenu}
+              renamingPath={renamingPath}
+              onRenameSubmit={onRenameSubmit}
+              onRenameCancel={onRenameCancel}
             />
           ))}
         </div>
@@ -171,6 +233,7 @@ export function FileExplorer() {
   const [newFileName, setNewFileName] = useState("");
   const [newFileError, setNewFileError] = useState<string | null>(null);
   const newFileInputRef = useRef<HTMLInputElement>(null);
+  const [renamingPath, setRenamingPath] = useState<string | null>(null);
 
   // Load root directory
   useEffect(() => {
@@ -284,6 +347,46 @@ export function FileExplorer() {
     [projectPath, refreshRoot],
   );
 
+  const handleStartRename = useCallback(
+    (path: string) => {
+      setRenamingPath(path);
+      setCtxMenu(null);
+    },
+    [],
+  );
+
+  const handleRenameSubmit = useCallback(
+    async (oldPath: string, newName: string) => {
+      const parentDir = oldPath.substring(0, oldPath.lastIndexOf("/"));
+      const newPath = `${parentDir}/${newName}`;
+      try {
+        await invoke("rename_path", {
+          oldPath,
+          newPath,
+          projectRoot: projectPath,
+        });
+        // Update any open file sessions that reference the old path
+        const allSessions = useSessionStore.getState().sessions;
+        for (const s of allSessions) {
+          if (s.kind === "OpenFile" && s.file_path === oldPath) {
+            useSessionStore.getState().updateSession(s.id, { file_path: newPath });
+          }
+        }
+        setRenamingPath(null);
+        refreshRoot();
+      } catch (e) {
+        console.error("Failed to rename:", e);
+        alert(`Rename failed: ${e}`);
+        setRenamingPath(null);
+      }
+    },
+    [projectPath, refreshRoot],
+  );
+
+  const handleRenameCancel = useCallback(() => {
+    setRenamingPath(null);
+  }, []);
+
   const handleContextMenu = useCallback((e: React.MouseEvent, path: string, isDir: boolean) => {
     e.preventDefault();
     setCtxMenu({ x: e.clientX, y: e.clientY, path, isDir });
@@ -319,6 +422,9 @@ export function FileExplorer() {
             depth={0}
             onOpenFile={handleOpenFile}
             onContextMenu={handleContextMenu}
+            renamingPath={renamingPath}
+            onRenameSubmit={handleRenameSubmit}
+            onRenameCancel={handleRenameCancel}
           />
         ))
       )}
@@ -371,6 +477,14 @@ export function FileExplorer() {
           >
             <Copy size={12} />
             Copy relative path
+          </button>
+          <button
+            type="button"
+            onClick={() => handleStartRename(ctxMenu.path)}
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-maestro-text hover:bg-maestro-border/40"
+          >
+            <Pencil size={12} />
+            Rename
           </button>
           <div className="my-1 border-t border-maestro-border" />
           <button
