@@ -1,8 +1,23 @@
-import { memo, useCallback, useRef } from "react";
+import { memo, useCallback, useMemo, useRef } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { keymap } from "@codemirror/view";
+import type { Extension } from "@codemirror/state";
+import { javascript } from "@codemirror/lang-javascript";
+import { python } from "@codemirror/lang-python";
+import { rust } from "@codemirror/lang-rust";
+import { json } from "@codemirror/lang-json";
+import { html } from "@codemirror/lang-html";
+import { css } from "@codemirror/lang-css";
+import { markdown } from "@codemirror/lang-markdown";
+import { xml } from "@codemirror/lang-xml";
+import { sql } from "@codemirror/lang-sql";
+import { yaml } from "@codemirror/lang-yaml";
+import { cpp } from "@codemirror/lang-cpp";
+import { java } from "@codemirror/lang-java";
+import { go } from "@codemirror/lang-go";
+import { php } from "@codemirror/lang-php";
 import { FileText, GripVertical, Loader2, Maximize2, Minimize2, Save, X } from "lucide-react";
 
 interface FileEditorViewProps {
@@ -26,6 +41,54 @@ interface FileEditorViewProps {
 function basename(path: string): string {
   const segments = path.split(/[\\/]/);
   return segments[segments.length - 1] || path;
+}
+
+function getLanguageExtension(filePath: string): Extension | undefined {
+  const name = basename(filePath).toLowerCase();
+  const ext = name.includes(".") ? name.split(".").pop() : undefined;
+
+  // Handle extensionless files by name
+  if (!ext || name === "dockerfile" || name === "containerfile") {
+    return undefined; // plain text
+  }
+  if (name === "makefile" || name === "gnumakefile") {
+    return undefined; // plain text
+  }
+
+  switch (ext) {
+    case "js": case "jsx": case "mjs": case "cjs":
+      return javascript({ jsx: true });
+    case "ts": case "tsx": case "mts": case "cts":
+      return javascript({ jsx: true, typescript: true });
+    case "py": case "pyw":
+      return python();
+    case "rs":
+      return rust();
+    case "json": case "jsonc":
+      return json();
+    case "html": case "htm":
+      return html();
+    case "css": case "scss": case "less":
+      return css();
+    case "md": case "mdx": case "markdown":
+      return markdown();
+    case "xml": case "svg": case "xsl": case "xslt": case "plist":
+      return xml();
+    case "sql":
+      return sql();
+    case "yml": case "yaml":
+      return yaml();
+    case "c": case "h": case "cpp": case "cxx": case "cc": case "hpp": case "hxx":
+      return cpp();
+    case "java":
+      return java();
+    case "go":
+      return go();
+    case "php":
+      return php();
+    default:
+      return undefined;
+  }
 }
 
 export const FileEditorView = memo(function FileEditorView({
@@ -68,6 +131,13 @@ export const FileEditorView = memo(function FileEditorView({
       ]),
     [],
   );
+
+  const editorExtensions = useMemo(() => {
+    const exts: Extension[] = [saveKeymap()];
+    const langExt = filePath ? getLanguageExtension(filePath) : undefined;
+    if (langExt) exts.push(langExt);
+    return exts;
+  }, [filePath, saveKeymap]);
 
   const compact = !isZoomed && terminalCount >= 5;
 
@@ -150,7 +220,7 @@ export const FileEditorView = memo(function FileEditorView({
               bracketMatching: true,
               highlightActiveLine: true,
             }}
-            extensions={[saveKeymap()]}
+            extensions={editorExtensions}
             height="100%"
             style={{ height: "100%" }}
           />
