@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Copy,
   File,
+  FilePlus,
   FileText,
   Folder,
   FolderOpen,
@@ -165,6 +166,10 @@ export function FileExplorer() {
   const [error, setError] = useState<string | null>(null);
   const [ctxMenu, setCtxMenu] = useState<ContextMenuState | null>(null);
   const ctxMenuRef = useRef<HTMLDivElement>(null);
+  const [newFileDir, setNewFileDir] = useState<string | null>(null);
+  const [newFileName, setNewFileName] = useState("");
+  const [newFileError, setNewFileError] = useState<string | null>(null);
+  const newFileInputRef = useRef<HTMLInputElement>(null);
 
   // Load root directory
   useEffect(() => {
@@ -190,6 +195,49 @@ export function FileExplorer() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [ctxMenu]);
+
+  const refreshRoot = useCallback(() => {
+    if (!projectPath) return;
+    listDirectory(projectPath).then(setEntries).catch(() => {});
+  }, [projectPath]);
+
+  // Focus the new file input when it appears
+  useEffect(() => {
+    if (newFileDir && newFileInputRef.current) {
+      newFileInputRef.current.focus();
+    }
+  }, [newFileDir]);
+
+  const handleNewFile = useCallback(
+    (ctxPath: string, isDir: boolean) => {
+      const dir = isDir ? ctxPath : ctxPath.substring(0, ctxPath.lastIndexOf("/"));
+      setNewFileDir(dir);
+      setNewFileName("");
+      setNewFileError(null);
+      setCtxMenu(null);
+    },
+    [],
+  );
+
+  const submitNewFile = useCallback(async () => {
+    if (!newFileDir || !newFileName.trim()) return;
+    const fullPath = `${newFileDir}/${newFileName.trim()}`;
+    try {
+      await invoke("create_file", { path: fullPath });
+      setNewFileDir(null);
+      setNewFileName("");
+      setNewFileError(null);
+      refreshRoot();
+    } catch (e) {
+      setNewFileError(String(e));
+    }
+  }, [newFileDir, newFileName, refreshRoot]);
+
+  const cancelNewFile = useCallback(() => {
+    setNewFileDir(null);
+    setNewFileName("");
+    setNewFileError(null);
+  }, []);
 
   const handleOpenFile = useCallback(
     async (path: string) => {
@@ -273,6 +321,14 @@ export function FileExplorer() {
           )}
           <button
             type="button"
+            onClick={() => handleNewFile(ctxMenu.path, ctxMenu.isDir)}
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-maestro-text hover:bg-maestro-border/40"
+          >
+            <FilePlus size={12} />
+            New file
+          </button>
+          <button
+            type="button"
             onClick={() => copyToClipboard(ctxMenu.path)}
             className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-maestro-text hover:bg-maestro-border/40"
           >
@@ -292,6 +348,57 @@ export function FileExplorer() {
             <Copy size={12} />
             Copy relative path
           </button>
+        </div>
+      )}
+
+      {/* New file inline input */}
+      {newFileDir && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-32">
+          <div className="rounded border border-maestro-border bg-maestro-card p-3 shadow-lg">
+            <div className="mb-2 text-xs text-maestro-muted">
+              New file in{" "}
+              <span className="text-maestro-text">
+                {newFileDir.startsWith(projectPath)
+                  ? newFileDir.slice(projectPath.length + 1) || "/"
+                  : newFileDir}
+              </span>
+            </div>
+            <input
+              ref={newFileInputRef}
+              type="text"
+              value={newFileName}
+              onChange={(e) => {
+                setNewFileName(e.target.value);
+                setNewFileError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitNewFile();
+                if (e.key === "Escape") cancelNewFile();
+              }}
+              placeholder="filename.ext"
+              className="w-full rounded border border-maestro-border bg-maestro-bg px-2 py-1 text-xs text-maestro-text outline-none focus:border-maestro-accent"
+            />
+            {newFileError && (
+              <div className="mt-1 text-xs text-red-400">{newFileError}</div>
+            )}
+            <div className="mt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={cancelNewFile}
+                className="rounded px-2 py-0.5 text-xs text-maestro-muted hover:bg-maestro-border/40"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitNewFile}
+                disabled={!newFileName.trim()}
+                className="rounded bg-maestro-accent px-2 py-0.5 text-xs text-white disabled:opacity-50"
+              >
+                Create
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -253,6 +253,7 @@ pub fn run() {
             commands::git::detect_repositories,
             // Filesystem commands
             commands::filesystem::list_directory,
+            commands::filesystem::create_file,
             // Session commands (new)
             commands::session::get_sessions,
             commands::session::create_session,

@@ -83,3 +83,27 @@ pub async fn list_directory(
 
     Ok(entries)
 }
+
+/// Creates an empty file at the given path. Errors if the file already exists.
+#[tauri::command]
+pub async fn create_file(path: String) -> Result<(), String> {
+    let file_path = std::path::Path::new(&path);
+
+    if file_path.exists() {
+        return Err(format!("File already exists: {}", path));
+    }
+
+    // Ensure parent directory exists
+    if let Some(parent) = file_path.parent() {
+        if !parent.exists() {
+            return Err(format!(
+                "Parent directory does not exist: {}",
+                parent.display()
+            ));
+        }
+    }
+
+    std::fs::File::create(file_path).map_err(|e| format!("Failed to create file: {}", e))?;
+
+    Ok(())
+}
