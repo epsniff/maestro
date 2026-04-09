@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { EditorView, keymap } from "@codemirror/view";
@@ -19,7 +19,7 @@ import { cpp } from "@codemirror/lang-cpp";
 import { java } from "@codemirror/lang-java";
 import { go } from "@codemirror/lang-go";
 import { php } from "@codemirror/lang-php";
-import { FileText, GripVertical, Loader2, Maximize2, Minimize2, Save, X } from "lucide-react";
+import { FileText, GripVertical, Loader2, Maximize2, Minimize2, Save, WrapText, X } from "lucide-react";
 
 // ── Custom CodeMirror theme using Maestro CSS variables ──
 
@@ -188,6 +188,7 @@ export const FileEditorView = memo(function FileEditorView({
   const cmRef = useRef<ReactCodeMirrorRef>(null);
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
+  const [wordWrap, setWordWrap] = useState(true);
 
   const { attributes: dragAttributes, listeners: dragListeners, setNodeRef: setDragRef, isDragging } =
     useDraggable({
@@ -213,8 +214,9 @@ export const FileEditorView = memo(function FileEditorView({
     const exts: Extension[] = [saveKeymap()];
     const langExt = filePath ? getLanguageExtension(filePath) : undefined;
     if (langExt) exts.push(langExt);
+    if (wordWrap) exts.push(EditorView.lineWrapping);
     return exts;
-  }, [filePath, saveKeymap]);
+  }, [filePath, saveKeymap, wordWrap]);
 
   const compact = !isZoomed && terminalCount >= 5;
 
@@ -244,6 +246,17 @@ export const FileEditorView = memo(function FileEditorView({
           </div>
           <div className="truncate text-[11px] text-maestro-muted">{filePath}</div>
         </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setWordWrap((w) => !w);
+          }}
+          className={`rounded p-1 transition-colors hover:bg-maestro-card ${wordWrap ? "text-maestro-accent" : "text-maestro-muted"}`}
+          title="Toggle word wrap"
+        >
+          <WrapText size={14} />
+        </button>
         <button
           type="button"
           onClick={(e) => {
