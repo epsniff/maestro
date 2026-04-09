@@ -57,11 +57,11 @@
     {
       "id": "file-path-input",
       "name": "Add file path text input to open-file session pane",
-      "status": "pending",
+      "status": "done",
       "instruction_file": "loop-builder-upstream-sync/instructions/scope-file-path-input.md",
       "type": "new-feature",
-      "approach": null,
-      "notes": null
+      "approach": "new implementation",
+      "notes": "Added text input in OpenFile section of PreLaunchCard. Supports absolute and relative paths (resolved against projectPath). Clear button, Enter to submit. Wired via new onSetFilePath prop through TerminalGrid."
     },
     {
       "id": "file-explorer",
@@ -73,8 +73,8 @@
       "notes": null
     }
   ],
-  "completed": ["upstream-216", "upstream-217", "upstream-220", "file-dragdrop", "stale-sessions", "instance-id"],
-  "iteration": 6,
+  "completed": ["upstream-216", "upstream-217", "upstream-220", "file-dragdrop", "stale-sessions", "instance-id", "file-path-input"],
+  "iteration": 7,
   "pivot_count": 0,
   "max_pivots": 3
 }

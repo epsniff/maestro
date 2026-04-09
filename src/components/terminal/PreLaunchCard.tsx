@@ -87,6 +87,7 @@ interface PreLaunchCardProps {
   onBranchChange: (branch: string | null) => void;
   onNewWorktreeBranchChange: (branch: string) => void;
   onPickFile: () => void;
+  onSetFilePath?: (path: string) => void;
   onMcpToggle: (serverName: string) => void;
   onSkillToggle: (skillId: string) => void;
   onPluginToggle: (pluginId: string) => void;
@@ -148,6 +149,7 @@ export function PreLaunchCard({
   onBranchChange,
   onNewWorktreeBranchChange,
   onPickFile,
+  onSetFilePath,
   onMcpToggle,
   onSkillToggle,
   onPluginToggle,
@@ -211,6 +213,10 @@ export function PreLaunchCard({
     Map<string, BranchWithWorktreeStatus[]>
   >(new Map());
   const [loadingRepos, setLoadingRepos] = useState<Set<string>>(new Set());
+
+  // File path text input state (for OpenFile mode)
+  const [filePathInput, setFilePathInput] = useState("");
+  const [filePathError, setFilePathError] = useState<string | null>(null);
 
   // Per-repo branch creation state (for multi-repo mode)
   const [repoCreateBranch, setRepoCreateBranch] = useState<string | null>(null); // repo path showing create input
@@ -1654,6 +1660,46 @@ export function PreLaunchCard({
                 <FileText size={15} className="text-maestro-accent" />
                 {slot.filePath ? "Choose Different File" : "Choose File"}
               </button>
+              {/* File path text input */}
+              {onSetFilePath && (
+                <div className="space-y-1">
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Or paste a file path..."
+                      value={filePathInput}
+                      onChange={(e) => {
+                        setFilePathInput(e.target.value);
+                        setFilePathError(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && filePathInput.trim()) {
+                          const path = filePathInput.trim();
+                          // Resolve relative paths against project root
+                          const resolved = path.startsWith("/") ? path : `${projectPath}/${path}`;
+                          onSetFilePath(resolved);
+                          setFilePathInput("");
+                          setFilePathError(null);
+                        }
+                      }}
+                      className="flex-1 rounded border border-maestro-border bg-maestro-bg px-2 py-1.5 text-sm text-maestro-text placeholder:text-maestro-muted/50 outline-none focus:border-maestro-accent/50"
+                    />
+                    {filePathInput && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFilePathInput("");
+                          setFilePathError(null);
+                        }}
+                        className="shrink-0 rounded border border-maestro-border px-2 text-maestro-muted hover:text-maestro-text hover:border-maestro-accent/50"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  {filePathError && <div className="text-xs text-red-400">{filePathError}</div>}
+                </div>
+              )}
               <div className="rounded border border-dashed border-maestro-border/70 bg-maestro-bg/40 px-3 py-2">
                 {slot.filePath ? (
                   <>
