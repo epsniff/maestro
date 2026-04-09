@@ -16,6 +16,10 @@
 - **Note**: The `useCallback` wrapping `saveKeymap` with empty deps + `onSaveRef` pattern avoids recreating extensions on every render while keeping the save callback current. CodeMirror re-initializes when `extensions` array identity changes, so stable references matter.
 - **Note**: `height="100%"` and `style={{ height: "100%" }}` both needed on the CodeMirror component, with the parent div having `min-h-0 flex-1 overflow-auto` for proper flex sizing.
 
+## Item 5b: add-language-detection-highlighting
+- **Approach**: Installed 14 `@codemirror/lang-*` packages. Added `getLanguageExtension()` function with extension-based switch and special-case handling for extensionless files (Dockerfile, Makefile). Used `useMemo` keyed on `filePath` to avoid recreating the extensions array on every render (important per Item 5a lesson about CodeMirror re-initializing when extensions identity changes).
+- **Note**: The `editorExtensions` memo combines both the save keymap and the language extension into a single stable array, replacing the inline `[saveKeymap()]` that was recreated each render.
+
 ## Item 3: fix-open-file-paste-path
 - **Root cause**: The file path text input only called `onSetFilePath` (which updates `slot.filePath`) on Enter key press. The launch button checks `slot.filePath` (not the local input state), so pasting a path didn't enable the button until Enter was pressed.
 - **Fix**: Call `onSetFilePath` in the `onChange` handler on every input change, resolving relative paths against the project root. The Enter key handler still works as a "confirm and clear" action.

@@ -45,7 +45,7 @@
     {
       "id": "add-language-detection-highlighting",
       "title": "Add language detection and per-extension syntax highlighting",
-      "status": "in_progress",
+      "status": "completed",
       "description": "Install CodeMirror language packages and build a file extension to language mapping. Wire it into the editor so files get automatic syntax highlighting based on their extension. Cover JS/TS, Rust, Python, JSON, HTML, CSS, Markdown, YAML, XML, SQL, C/C++, Java, Go, PHP.",
       "files": ["src/components/session/FileEditorView.tsx", "package.json"],
       "instructions": "instructions/05b-language-detection.md"
@@ -116,6 +116,6 @@
       "instructions": "instructions/12-move-usage-to-status-tab.md"
     }
   ],
-  "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor"],
-  "current_item": "add-language-detection-highlighting"
+  "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting"],
+  "current_item": null
 }
