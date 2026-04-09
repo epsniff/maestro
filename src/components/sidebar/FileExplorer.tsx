@@ -1,8 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import {
   ChevronDown,
   ChevronRight,
   Copy,
+  ExternalLink,
   File,
   FilePlus,
   FileText,
@@ -528,6 +530,17 @@ export function FileExplorer() {
           >
             <Copy size={12} />
             Copy relative path
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              revealItemInDir(ctxMenu.path);
+              setCtxMenu(null);
+            }}
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-maestro-text hover:bg-maestro-border/40"
+          >
+            <ExternalLink size={12} />
+            Reveal in Finder
           </button>
           <button
             type="button"
