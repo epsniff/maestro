@@ -110,12 +110,12 @@
     {
       "id": "move-usage-to-status-tab",
       "title": "Move Claude usage display from sidebar to Status tab in right panel",
-      "status": "in_progress",
+      "status": "completed",
       "description": "Remove the Claude daily/weekly usage bars from the sidebar bottom-left and add them as a card in the right panel's Status tab. Only poll the usage API when the Status tab is active and the panel is not collapsed. Stop polling when switching tabs or collapsing. Cached data shows immediately when switching back.",
       "files": ["src/components/sidebar/Sidebar.tsx", "src/components/shared/RightPanel.tsx", "src/stores/useUsageStore.ts", "src/components/tamagotchi/Tamagotchi.tsx"],
       "instructions": "instructions/12-move-usage-to-status-tab.md"
     }
   ],
-  "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting", "codemirror-maestro-theme", "swap-tab-order-files-first", "rename-file-folder", "new-folder-context-menu", "reveal-in-finder", "show-hidden-files-toggle", "word-wrap-toggle"],
-  "current_item": "move-usage-to-status-tab"
+  "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting", "codemirror-maestro-theme", "swap-tab-order-files-first", "rename-file-folder", "new-folder-context-menu", "reveal-in-finder", "show-hidden-files-toggle", "word-wrap-toggle", "move-usage-to-status-tab"],
+  "current_item": null
 }

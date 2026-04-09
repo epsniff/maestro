@@ -42,6 +42,12 @@
 - **Approach**: Added `wordWrap` state (default `true`), conditionally pushed `EditorView.lineWrapping` into the `editorExtensions` memo, and added a `WrapText` icon button in the header. The button highlights in `text-maestro-accent` when active, dims to `text-maestro-muted` when off.
 - **Note**: Adding `wordWrap` to the `useMemo` deps means the extensions array identity changes on toggle, which causes CodeMirror to reconfigure (not remount). This is the correct behavior — reconfiguration preserves scroll position and editor state.
 
+## Item 14: move-usage-to-status-tab
+- **Approach**: Created a `UsageCard` component in RightPanel.tsx rather than moving the existing Tamagotchi component. Used Approach B from instructions — the StatusTab is always mounted when `activeTab === "status"` (even when panel is collapsed), so the `isVisible` prop (`!collapsed && activeTab === "status"`) gates the `startPolling()` call in a `useEffect`.
+- **Note**: The existing ref-counted polling in `useUsageStore` handles start/stop cleanly. The `useEffect` with `[isVisible, startPolling]` deps means: visible → starts polling → invisible → cleanup runs → polling stops. Cached zustand state shows immediately on re-mount since it persists across component lifecycles.
+- **Note**: Maestro has no `text-secondary` Tailwind utility — use `text-maestro-muted` for secondary text. The tailwind config only defines: bg, surface, card, border, text, muted, accent, green, red, orange, yellow, purple.
+- **Note**: The Tamagotchi toggle (`showCharacter`) remains in the sidebar Settings section but no longer affects the StatusTab's UsageCard (which always shows bars). Could be cleaned up in a future pass.
+
 ## Item 3: fix-open-file-paste-path
 - **Root cause**: The file path text input only called `onSetFilePath` (which updates `slot.filePath`) on Enter key press. The launch button checks `slot.filePath` (not the local input state), so pasting a path didn't enable the button until Enter was pressed.
 - **Fix**: Call `onSetFilePath` in the `onChange` handler on every input change, resolving relative paths against the project root. The Enter key handler still works as a "confirm and clear" action.
