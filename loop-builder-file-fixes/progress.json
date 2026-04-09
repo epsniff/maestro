@@ -37,7 +37,7 @@
     {
       "id": "install-codemirror-basic-editor",
       "title": "Install CodeMirror and replace textarea with basic editor",
-      "status": "pending",
+      "status": "in_progress",
       "description": "Install @uiw/react-codemirror and @codemirror/theme-one-dark. Replace the plain textarea in FileEditorView with a CodeMirror editor in plain text mode with line numbers. Preserve save (Cmd/Ctrl+S) and dirty state tracking.",
       "files": ["src/components/session/FileEditorView.tsx", "package.json"],
       "instructions": "instructions/05a-install-codemirror.md"
@@ -117,5 +117,5 @@
     }
   ],
   "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu"],
-  "current_item": null
+  "current_item": "install-codemirror-basic-editor"
 }
