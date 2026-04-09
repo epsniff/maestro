@@ -58,9 +58,12 @@ mod tests {
             .unwrap();
         assert_eq!(opened.content, "# Hello\n");
 
-        write_text_file(path.to_string_lossy().into_owned(), "# Updated\n".to_string())
-            .await
-            .unwrap();
+        write_text_file(
+            path.to_string_lossy().into_owned(),
+            "# Updated\n".to_string(),
+        )
+        .await
+        .unwrap();
 
         let updated = std::fs::read_to_string(&path).unwrap();
         assert_eq!(updated, "# Updated\n");

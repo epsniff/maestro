@@ -23,9 +23,7 @@ pub async fn check_claude_md(project_path: String) -> Result<ClaudeMdStatus, Str
 
     if claude_md_path.exists() {
         // Read content if file exists
-        let content = tokio::fs::read_to_string(&claude_md_path)
-            .await
-            .ok();
+        let content = tokio::fs::read_to_string(&claude_md_path).await.ok();
 
         Ok(ClaudeMdStatus {
             exists: true,

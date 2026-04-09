@@ -133,6 +133,7 @@ function isValidBranchName(name: string): boolean {
 
 export function PreLaunchCard({
   slot,
+  projectPath,
   branches,
   isLoadingBranches,
   isGitRepo,

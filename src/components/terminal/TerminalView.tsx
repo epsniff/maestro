@@ -838,7 +838,7 @@ export const TerminalView = memo(function TerminalView({
       <TerminalHeader
         sessionId={sessionId}
         slotId={slotId}
-        sessionName={sessionData?.name}
+        sessionName={sessionData?.name ?? undefined}
         provider={effectiveProvider}
         status={effectiveStatus}
         statusMessage={sessionData?.statusMessage || sessionData?.needsInputPrompt}

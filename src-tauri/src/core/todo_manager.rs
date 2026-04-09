@@ -60,7 +60,9 @@ impl TodoManager {
                 (false, false) => a.order.cmp(&b.order),
                 (true, true) => {
                     // Most recently completed first
-                    b.completed_at.unwrap_or(0).cmp(&a.completed_at.unwrap_or(0))
+                    b.completed_at
+                        .unwrap_or(0)
+                        .cmp(&a.completed_at.unwrap_or(0))
                 }
             }
         });
@@ -73,7 +75,12 @@ impl TodoManager {
         let mut todos = self.todos.write().await;
         let items = todos.entry(project_path.to_string()).or_default();
 
-        let max_order = items.iter().filter(|i| !i.completed).map(|i| i.order).max().unwrap_or(-1);
+        let max_order = items
+            .iter()
+            .filter(|i| !i.completed)
+            .map(|i| i.order)
+            .max()
+            .unwrap_or(-1);
 
         let item = TodoItem {
             id: uuid::Uuid::new_v4().to_string(),
@@ -99,7 +106,10 @@ impl TodoManager {
     ) -> Result<TodoItem, String> {
         let mut todos = self.todos.write().await;
         let items = todos.get_mut(project_path).ok_or("Project not found")?;
-        let item = items.iter_mut().find(|i| i.id == id).ok_or("Todo not found")?;
+        let item = items
+            .iter_mut()
+            .find(|i| i.id == id)
+            .ok_or("Todo not found")?;
 
         if let Some(text) = text {
             item.text = text;

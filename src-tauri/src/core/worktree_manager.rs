@@ -8,9 +8,7 @@ use crate::git::{Git, GitError, WorktreeInfo};
 pub(crate) fn worktree_base_dir() -> PathBuf {
     directories::ProjectDirs::from("com", "maestro", "maestro")
         .map(|p| p.data_dir().to_path_buf())
-        .unwrap_or_else(|| {
-            dirs_fallback()
-        })
+        .unwrap_or_else(|| dirs_fallback())
         .join("worktrees")
 }
 
@@ -105,11 +103,7 @@ impl WorktreeManager {
     /// before creating (returns `BranchAlreadyCheckedOut` if so). Parent
     /// directories are created automatically. The worktree checks out the
     /// existing branch -- no new branch is created.
-    pub async fn create(
-        &self,
-        branch: &str,
-        repo_path: &Path,
-    ) -> Result<PathBuf, GitError> {
+    pub async fn create(&self, branch: &str, repo_path: &Path) -> Result<PathBuf, GitError> {
         self.create_with_base(branch, repo_path, None).await
     }
 
@@ -140,14 +134,18 @@ impl WorktreeManager {
             }
         }
 
-        let wt_path = self.worktree_path_with_base(repo_path, branch, base_override).await;
+        let wt_path = self
+            .worktree_path_with_base(repo_path, branch, base_override)
+            .await;
 
         // Create parent directories
         if let Some(parent) = wt_path.parent() {
-            tokio::fs::create_dir_all(parent).await.map_err(|e| GitError::SpawnError {
-                source: e,
-                command: format!("create_dir_all {:?}", parent),
-            })?;
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| GitError::SpawnError {
+                    source: e,
+                    command: format!("create_dir_all {:?}", parent),
+                })?;
         }
 
         git.worktree_add(&wt_path, None, Some(branch)).await?;
@@ -207,12 +205,13 @@ impl WorktreeManager {
         let hash = repo_hash(repo_path).await;
         let managed_dir = worktree_base_dir().join(&hash);
 
-        let managed_exists = tokio::fs::try_exists(&managed_dir)
-            .await
-            .map_err(|e| GitError::SpawnError {
-                source: e,
-                command: format!("try_exists {:?}", managed_dir),
-            })?;
+        let managed_exists =
+            tokio::fs::try_exists(&managed_dir)
+                .await
+                .map_err(|e| GitError::SpawnError {
+                    source: e,
+                    command: format!("try_exists {:?}", managed_dir),
+                })?;
         if !managed_exists {
             return Ok(());
         }
@@ -228,7 +227,9 @@ impl WorktreeManager {
         let mut active: HashSet<String> = HashSet::with_capacity(active_raw.len());
         for raw in &active_raw {
             let p = Path::new(raw);
-            let canonical = tokio::fs::canonicalize(p).await.unwrap_or_else(|_| p.to_path_buf());
+            let canonical = tokio::fs::canonicalize(p)
+                .await
+                .unwrap_or_else(|_| p.to_path_buf());
             active.insert(canonical.to_string_lossy().to_string());
         }
 

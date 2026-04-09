@@ -227,9 +227,7 @@ async fn prepare_mcp_session(
 ) -> Result<McpSessionContext, String> {
     let canonical = canonicalize_path(project_path)?;
 
-    status_server
-        .register_session(session_id, &canonical)
-        .await;
+    status_server.register_session(session_id, &canonical).await;
 
     let all_discovered = mcp_state.get_project_servers(&canonical);
     let enabled_discovered: Vec<_> = all_discovered
@@ -265,12 +263,21 @@ pub async fn write_session_mcp_config(
     enabled_server_names: Vec<String>,
 ) -> Result<(), String> {
     let ctx = prepare_mcp_session(
-        &app, &mcp_state, &status_server, &project_path, session_id, &enabled_server_names,
-    ).await?;
+        &app,
+        &mcp_state,
+        &status_server,
+        &project_path,
+        session_id,
+        &enabled_server_names,
+    )
+    .await?;
 
     log::info!(
         "Writing MCP config for session {} to {} ({} discovered + {} custom servers)",
-        session_id, working_dir, ctx.enabled_discovered.len(), ctx.enabled_custom.len(),
+        session_id,
+        working_dir,
+        ctx.enabled_discovered.len(),
+        ctx.enabled_custom.len(),
     );
 
     mcp_config_writer::write_session_mcp_config(
@@ -298,12 +305,21 @@ pub async fn write_opencode_mcp_config(
     enabled_server_names: Vec<String>,
 ) -> Result<(), String> {
     let ctx = prepare_mcp_session(
-        &app, &mcp_state, &status_server, &project_path, session_id, &enabled_server_names,
-    ).await?;
+        &app,
+        &mcp_state,
+        &status_server,
+        &project_path,
+        session_id,
+        &enabled_server_names,
+    )
+    .await?;
 
     log::info!(
         "Writing OpenCode MCP config for session {} to {} ({} discovered + {} custom servers)",
-        session_id, working_dir, ctx.enabled_discovered.len(), ctx.enabled_custom.len(),
+        session_id,
+        working_dir,
+        ctx.enabled_discovered.len(),
+        ctx.enabled_custom.len(),
     );
 
     mcp_config_writer::write_opencode_mcp_config(
@@ -352,7 +368,10 @@ pub async fn remove_session_mcp_config(working_dir: String, session_id: u32) -> 
 ///
 /// This should be called when an OpenCode session is killed to clean up the config file.
 #[tauri::command]
-pub async fn remove_opencode_mcp_config(working_dir: String, session_id: u32) -> Result<(), String> {
+pub async fn remove_opencode_mcp_config(
+    working_dir: String,
+    session_id: u32,
+) -> Result<(), String> {
     let path = PathBuf::from(&working_dir);
     mcp_config_writer::remove_opencode_mcp_config(&path, session_id).await
 }

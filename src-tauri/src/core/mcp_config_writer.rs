@@ -40,13 +40,11 @@ async fn atomic_write(path: &Path, content: &str) -> Result<(), String> {
         .await
         .map_err(|e| format!("Failed to write temp file: {}", e))?;
 
-    tokio::fs::rename(&temp_path, path)
-        .await
-        .map_err(|e| {
-            // Clean up temp file on rename failure
-            let _ = std::fs::remove_file(&temp_path);
-            format!("Failed to rename temp file: {}", e)
-        })?;
+    tokio::fs::rename(&temp_path, path).await.map_err(|e| {
+        // Clean up temp file on rename failure
+        let _ = std::fs::remove_file(&temp_path);
+        format!("Failed to rename temp file: {}", e)
+    })?;
 
     Ok(())
 }
@@ -76,10 +74,7 @@ fn find_maestro_mcp_path_uncached() -> Option<PathBuf> {
     let binary_name = "maestro-mcp-server";
 
     let current_exe = std::env::current_exe().ok();
-    log::debug!(
-        "find_maestro_mcp_path: current_exe = {:?}",
-        current_exe
-    );
+    log::debug!("find_maestro_mcp_path: current_exe = {:?}", current_exe);
 
     let candidates: Vec<Option<PathBuf>> = vec![
         // Candidate [0]: Next to the executable.
@@ -116,7 +111,10 @@ fn find_maestro_mcp_path_uncached() -> Option<PathBuf> {
                 .and_then(|d| d.parent()) // target
                 .and_then(|d| d.parent()) // src-tauri
                 .and_then(|d| d.parent()) // project root
-                .map(|d| d.join("maestro-mcp-server/target/release").join(binary_name))
+                .map(|d| {
+                    d.join("maestro-mcp-server/target/release")
+                        .join(binary_name)
+                })
         }),
         // Non-workspace development: also check debug build of MCP server
         current_exe.as_ref().and_then(|p| {
@@ -127,15 +125,12 @@ fn find_maestro_mcp_path_uncached() -> Option<PathBuf> {
                 .map(|d| d.join("maestro-mcp-server/target/debug").join(binary_name))
         }),
         // macOS Application Support
-        directories::BaseDirs::new()
-            .map(|d| d.data_dir().join("Claude Maestro").join(binary_name)),
+        directories::BaseDirs::new().map(|d| d.data_dir().join("Claude Maestro").join(binary_name)),
         // Linux local share
-        directories::BaseDirs::new()
-            .map(|d| d.data_local_dir().join("maestro").join(binary_name)),
+        directories::BaseDirs::new().map(|d| d.data_local_dir().join("maestro").join(binary_name)),
         // Windows AppData
         #[cfg(target_os = "windows")]
-        directories::BaseDirs::new()
-            .map(|d| d.data_local_dir().join("Maestro").join(binary_name)),
+        directories::BaseDirs::new().map(|d| d.data_local_dir().join("Maestro").join(binary_name)),
     ];
 
     for (i, candidate) in candidates.iter().enumerate() {
@@ -208,25 +203,37 @@ fn custom_server_to_json(server: &McpCustomServer) -> Value {
 fn should_remove_server(name: &str) -> bool {
     // Remove the single maestro-status entry (we'll add an updated one)
     if name == "maestro-status" {
-        log::debug!("[MCP] should_remove_server('{}') = true (single maestro-status entry)", name);
+        log::debug!(
+            "[MCP] should_remove_server('{}') = true (single maestro-status entry)",
+            name
+        );
         return true;
     }
 
     // Remove legacy per-session entries (cleanup from old per-session approach)
     if name.starts_with("maestro-status-") {
-        log::debug!("[MCP] should_remove_server('{}') = true (legacy per-session entry)", name);
+        log::debug!(
+            "[MCP] should_remove_server('{}') = true (legacy per-session entry)",
+            name
+        );
         return true;
     }
 
     // Remove legacy "maestro-{N}" entries
     if name.starts_with("maestro-") && name != "maestro-status" {
-        log::debug!("[MCP] should_remove_server('{}') = true (legacy maestro-N entry)", name);
+        log::debug!(
+            "[MCP] should_remove_server('{}') = true (legacy maestro-N entry)",
+            name
+        );
         return true;
     }
 
     // Remove the legacy bare "maestro" entry
     if name == "maestro" {
-        log::debug!("[MCP] should_remove_server('{}') = true (legacy bare maestro entry)", name);
+        log::debug!(
+            "[MCP] should_remove_server('{}') = true (legacy bare maestro entry)",
+            name
+        );
         return true;
     }
 
@@ -244,9 +251,14 @@ async fn merge_with_existing(
     new_servers: HashMap<String, Value>,
     session_id: u32,
 ) -> Result<Value, String> {
-    log::debug!("[MCP] merge_with_existing: {:?} for session {}", mcp_path, session_id);
+    log::debug!(
+        "[MCP] merge_with_existing: {:?} for session {}",
+        mcp_path,
+        session_id
+    );
 
-    let mut final_servers: HashMap<String, Value> = match tokio::fs::read_to_string(mcp_path).await {
+    let mut final_servers: HashMap<String, Value> = match tokio::fs::read_to_string(mcp_path).await
+    {
         Ok(content) => {
             let existing: Value = serde_json::from_str(&content)
                 .map_err(|e| format!("Failed to parse existing .mcp.json: {}", e))?;
@@ -277,7 +289,11 @@ async fn merge_with_existing(
 
     // Add new servers for this session
     for (name, config) in new_servers {
-        log::info!("merge_with_existing: adding server '{}' for session {}", name, session_id);
+        log::info!(
+            "merge_with_existing: adding server '{}' for session {}",
+            name,
+            session_id
+        );
         final_servers.insert(name, config);
     }
 
@@ -374,11 +390,7 @@ pub async fn write_session_mcp_config(
 
     atomic_write(&mcp_path, &content).await?;
 
-    log::debug!(
-        "Wrote session {} MCP config to {:?}",
-        session_id,
-        mcp_path
-    );
+    log::debug!("Wrote session {} MCP config to {:?}", session_id, mcp_path);
 
     Ok(())
 }
@@ -564,7 +576,11 @@ pub async fn remove_opencode_mcp_config(working_dir: &Path, session_id: u32) -> 
     let parsed: serde_json::Value = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse opencode.json: {}", e))?;
 
-    let mut mcp_obj = parsed.get("mcp").and_then(|m| m.as_object()).cloned().unwrap_or_default();
+    let mut mcp_obj = parsed
+        .get("mcp")
+        .and_then(|m| m.as_object())
+        .cloned()
+        .unwrap_or_default();
 
     // Remove maestro-status entry
     mcp_obj.remove("maestro-status");
@@ -609,19 +625,25 @@ pub async fn remove_session_mcp_config(working_dir: &Path, session_id: u32) -> R
         Err(e) => return Err(format!("Failed to read .mcp.json: {}", e)),
     };
 
-    let mut config: Value = serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse .mcp.json: {}", e))?;
+    let mut config: Value =
+        serde_json::from_str(&content).map_err(|e| format!("Failed to parse .mcp.json: {}", e))?;
 
     if let Some(servers) = config.get_mut("mcpServers").and_then(|s| s.as_object_mut()) {
         // Remove the single maestro-status entry
         if servers.remove("maestro-status").is_some() {
-            log::debug!("Removed maestro-status MCP config from {:?} (session {})", mcp_path, session_id);
+            log::debug!(
+                "Removed maestro-status MCP config from {:?} (session {})",
+                mcp_path,
+                session_id
+            );
         }
 
         // Also clean up any legacy per-session entries that might exist
         let legacy_keys: Vec<String> = servers
             .keys()
-            .filter(|k| k.starts_with("maestro-status-") || k.starts_with("maestro-") || *k == "maestro")
+            .filter(|k| {
+                k.starts_with("maestro-status-") || k.starts_with("maestro-") || *k == "maestro"
+            })
             .cloned()
             .collect();
 
@@ -763,25 +785,40 @@ mod tests {
             }),
         );
 
-        let result = merge_with_existing(&mcp_path, new_servers, 3).await.unwrap();
+        let result = merge_with_existing(&mcp_path, new_servers, 3)
+            .await
+            .unwrap();
         let servers = result["mcpServers"].as_object().unwrap();
 
         // User server should be preserved
-        assert!(servers.contains_key("user-server"), "user-server should be preserved");
+        assert!(
+            servers.contains_key("user-server"),
+            "user-server should be preserved"
+        );
         // ALL legacy Maestro entries should be removed
-        assert!(!servers.contains_key("maestro"), "bare 'maestro' should be removed");
-        assert!(!servers.contains_key("maestro-status-1"), "legacy session 1 entry should be removed");
-        assert!(!servers.contains_key("maestro-status-2"), "legacy session 2 entry should be removed");
+        assert!(
+            !servers.contains_key("maestro"),
+            "bare 'maestro' should be removed"
+        );
+        assert!(
+            !servers.contains_key("maestro-status-1"),
+            "legacy session 1 entry should be removed"
+        );
+        assert!(
+            !servers.contains_key("maestro-status-2"),
+            "legacy session 2 entry should be removed"
+        );
         // New single maestro-status entry should be present with updated command and session ID
-        assert!(servers.contains_key("maestro-status"), "maestro-status entry should be present");
+        assert!(
+            servers.contains_key("maestro-status"),
+            "maestro-status entry should be present"
+        );
         assert_eq!(
-            servers["maestro-status"]["command"],
-            "/usr/bin/new-maestro-status",
+            servers["maestro-status"]["command"], "/usr/bin/new-maestro-status",
             "maestro-status should have new command"
         );
         assert_eq!(
-            servers["maestro-status"]["env"]["MAESTRO_SESSION_ID"],
-            "3",
+            servers["maestro-status"]["env"]["MAESTRO_SESSION_ID"], "3",
             "maestro-status should have session ID 3 in env"
         );
     }
@@ -843,8 +880,8 @@ mod tests {
 
         // Verify the final file is valid JSON with all 10 servers
         let final_content = std::fs::read_to_string(dir_path.join(".mcp.json")).unwrap();
-        let final_config: Value = serde_json::from_str(&final_content)
-            .expect("final .mcp.json should be valid JSON");
+        let final_config: Value =
+            serde_json::from_str(&final_content).expect("final .mcp.json should be valid JSON");
         let servers = final_config["mcpServers"].as_object().unwrap();
         assert_eq!(servers.len(), 10, "should have all 10 server entries");
         for i in 0..10u32 {
@@ -903,15 +940,29 @@ mod tests {
             }),
         );
 
-        let result = merge_with_existing(&mcp_path, new_servers, 5).await.unwrap();
+        let result = merge_with_existing(&mcp_path, new_servers, 5)
+            .await
+            .unwrap();
         let servers = result["mcpServers"].as_object().unwrap();
 
         // All legacy entries should be removed
-        assert!(!servers.contains_key("maestro-1"), "maestro-1 legacy entry should be removed");
-        assert!(!servers.contains_key("maestro-2"), "maestro-2 legacy entry should be removed");
+        assert!(
+            !servers.contains_key("maestro-1"),
+            "maestro-1 legacy entry should be removed"
+        );
+        assert!(
+            !servers.contains_key("maestro-2"),
+            "maestro-2 legacy entry should be removed"
+        );
         // Non-Maestro server should be preserved
-        assert!(servers.contains_key("other-server"), "other-server should be preserved");
+        assert!(
+            servers.contains_key("other-server"),
+            "other-server should be preserved"
+        );
         // New entry should be present
-        assert!(servers.contains_key("maestro-status"), "new maestro-status entry should be present");
+        assert!(
+            servers.contains_key("maestro-status"),
+            "new maestro-status entry should be present"
+        );
     }
 }

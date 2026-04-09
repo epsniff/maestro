@@ -129,20 +129,18 @@ pub(crate) async fn prepare_worktree_inner(
 
         // Get a fallback branch to switch to, or detach HEAD if none available
         match get_fallback_branch(&git, &local_branch).await {
-            Some(fallback) => {
-                match git.checkout_branch(&fallback).await {
-                    Ok(()) => {
-                        log::info!("Switched main repo to {}", fallback);
-                    }
-                    Err(e) => {
-                        log::warn!("Failed to switch main repo to {}: {}", fallback, e);
-                        warning = Some(format!(
-                            "Could not switch main repo from {}: {}",
-                            local_branch, e
-                        ));
-                    }
+            Some(fallback) => match git.checkout_branch(&fallback).await {
+                Ok(()) => {
+                    log::info!("Switched main repo to {}", fallback);
                 }
-            }
+                Err(e) => {
+                    log::warn!("Failed to switch main repo to {}: {}", fallback, e);
+                    warning = Some(format!(
+                        "Could not switch main repo from {}: {}",
+                        local_branch, e
+                    ));
+                }
+            },
             None => {
                 // No other branches exist - detach HEAD to free the branch
                 log::info!("No fallback branch available, detaching HEAD");
@@ -180,7 +178,10 @@ pub(crate) async fn prepare_worktree_inner(
 
     // Create the worktree
     let base_override = worktree_base_path.as_deref().map(Path::new);
-    match worktree_manager.create_with_base(&local_branch, &repo_path, base_override).await {
+    match worktree_manager
+        .create_with_base(&local_branch, &repo_path, base_override)
+        .await
+    {
         Ok(wt_path) => {
             let wt_path_str = wt_path.to_string_lossy().to_string();
             log::info!(
@@ -324,14 +325,18 @@ async fn ensure_local_branch(
     start_point: Option<&str>,
 ) -> Result<(), String> {
     // Check if the local branch already exists
-    let local_exists = branches.iter().any(|b| !b.is_remote && b.name == local_branch);
+    let local_exists = branches
+        .iter()
+        .any(|b| !b.is_remote && b.name == local_branch);
     if local_exists {
         return Ok(());
     }
 
     // Check if there's a remote ref we should track
     let is_remote_ref = original_branch.contains('/');
-    let remote_exists = branches.iter().any(|b| b.is_remote && b.name == original_branch);
+    let remote_exists = branches
+        .iter()
+        .any(|b| b.is_remote && b.name == original_branch);
 
     if is_remote_ref && remote_exists {
         // Create a local tracking branch from the remote ref
@@ -387,7 +392,9 @@ mod tests {
         let git = Git::new(&path);
 
         git.run(&["init"]).await.unwrap();
-        git.run(&["config", "user.email", "test@test.com"]).await.unwrap();
+        git.run(&["config", "user.email", "test@test.com"])
+            .await
+            .unwrap();
         git.run(&["config", "user.name", "Test"]).await.unwrap();
 
         // Create initial commit
@@ -417,13 +424,19 @@ mod tests {
     fn test_resolve_local_branch_name_local() {
         let branches = vec![local_branch("main"), local_branch("feature-x")];
         assert_eq!(resolve_local_branch_name("main", &branches), "main");
-        assert_eq!(resolve_local_branch_name("feature-x", &branches), "feature-x");
+        assert_eq!(
+            resolve_local_branch_name("feature-x", &branches),
+            "feature-x"
+        );
     }
 
     #[test]
     fn test_resolve_local_branch_name_remote() {
         let branches = vec![local_branch("main")];
-        assert_eq!(resolve_local_branch_name("origin/feature-x", &branches), "feature-x");
+        assert_eq!(
+            resolve_local_branch_name("origin/feature-x", &branches),
+            "feature-x"
+        );
         assert_eq!(resolve_local_branch_name("origin/main", &branches), "main");
         assert_eq!(
             resolve_local_branch_name("upstream/fix/nested", &branches),
@@ -439,30 +452,34 @@ mod tests {
             local_branch("feature/foo"),
             local_branch("fix/bar/baz"),
         ];
-        assert_eq!(resolve_local_branch_name("feature/foo", &branches), "feature/foo");
-        assert_eq!(resolve_local_branch_name("fix/bar/baz", &branches), "fix/bar/baz");
+        assert_eq!(
+            resolve_local_branch_name("feature/foo", &branches),
+            "feature/foo"
+        );
+        assert_eq!(
+            resolve_local_branch_name("fix/bar/baz", &branches),
+            "fix/bar/baz"
+        );
     }
 
     #[test]
     fn test_resolve_local_branch_name_slash_branch_not_local() {
         // feature/foo does NOT exist locally — treat as remote ref, strip first segment
         let branches = vec![local_branch("main")];
-        assert_eq!(resolve_local_branch_name("origin/feature-x", &branches), "feature-x");
+        assert_eq!(
+            resolve_local_branch_name("origin/feature-x", &branches),
+            "feature-x"
+        );
     }
 
     #[tokio::test]
     async fn test_prepare_no_branch_returns_project_path() {
         let (_dir, path) = create_test_repo().await;
         let wm = WorktreeManager::new();
-        let result = prepare_worktree_inner(
-            &wm,
-            path.to_string_lossy().to_string(),
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let result =
+            prepare_worktree_inner(&wm, path.to_string_lossy().to_string(), None, None, None)
+                .await
+                .unwrap();
 
         assert_eq!(result.working_directory, path.to_string_lossy().to_string());
         assert!(result.worktree_path.is_none());
@@ -583,10 +600,7 @@ mod tests {
 
         assert!(result.created);
         assert!(result.worktree_path.is_some());
-        assert_ne!(
-            result.working_directory,
-            path.to_string_lossy().to_string()
-        );
+        assert_ne!(result.working_directory, path.to_string_lossy().to_string());
 
         // Cleanup
         let wt_path = PathBuf::from(result.worktree_path.unwrap());
@@ -667,7 +681,9 @@ mod tests {
 
         create_branch(&git, "feature-base").await;
         git.checkout_branch("feature-base").await.unwrap();
-        tokio::fs::write(path.join("feature.txt"), "feature-base").await.unwrap();
+        tokio::fs::write(path.join("feature.txt"), "feature-base")
+            .await
+            .unwrap();
         git.run(&["add", "."]).await.unwrap();
         git.run(&["commit", "-m", "feature base"]).await.unwrap();
         git.checkout_branch(&initial_branch).await.unwrap();
@@ -739,7 +755,10 @@ mod tests {
         let current = git.current_branch().await.unwrap();
 
         let fallback = get_fallback_branch(&git, &current).await;
-        assert!(fallback.is_none(), "Single-branch repo should have no fallback");
+        assert!(
+            fallback.is_none(),
+            "Single-branch repo should have no fallback"
+        );
     }
 
     #[tokio::test]

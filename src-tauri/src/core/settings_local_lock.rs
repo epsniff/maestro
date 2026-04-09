@@ -34,22 +34,17 @@ pub fn dir_lock(dir: &Path) -> Arc<Mutex<()>> {
 /// the file if the process is interrupted.
 pub async fn atomic_write(path: &Path, content: &str) -> Result<(), String> {
     let parent = path.parent().ok_or("No parent directory")?;
-    let temp_path = parent.join(format!(
-        ".settings.local.json.tmp.{}",
-        std::process::id()
-    ));
+    let temp_path = parent.join(format!(".settings.local.json.tmp.{}", std::process::id()));
 
     tokio::fs::write(&temp_path, content)
         .await
         .map_err(|e| format!("Failed to write temp file: {}", e))?;
 
-    tokio::fs::rename(&temp_path, path)
-        .await
-        .map_err(|e| {
-            // Clean up temp file on rename failure
-            let _ = std::fs::remove_file(&temp_path);
-            format!("Failed to rename temp file: {}", e)
-        })?;
+    tokio::fs::rename(&temp_path, path).await.map_err(|e| {
+        // Clean up temp file on rename failure
+        let _ = std::fs::remove_file(&temp_path);
+        format!("Failed to rename temp file: {}", e)
+    })?;
 
     Ok(())
 }
@@ -138,8 +133,8 @@ mod tests {
 
         // Final file must be valid JSON
         let final_content = std::fs::read_to_string(&path).unwrap();
-        let parsed: serde_json::Value = serde_json::from_str(&final_content)
-            .expect("final file should be valid JSON");
+        let parsed: serde_json::Value =
+            serde_json::from_str(&final_content).expect("final file should be valid JSON");
         assert!(parsed.get("writer").is_some());
     }
 
@@ -154,9 +149,7 @@ mod tests {
         assert!(validate_json(r#"{"unclosed": true"#).is_err());
         assert!(validate_json(r#"not json at all"#).is_err());
         // Simulates the exact corruption pattern: valid JSON + trailing garbage
-        assert!(validate_json(
-            r#"{"key": "value"}extra garbage here"#
-        ).is_err());
+        assert!(validate_json(r#"{"key": "value"}extra garbage here"#).is_err());
     }
 
     #[test]
