@@ -1,5 +1,5 @@
 pub mod claudemd;
-pub mod shared;
+pub mod filesystem;
 pub mod fonts;
 pub mod git;
 pub mod github;
@@ -9,6 +9,7 @@ pub mod mcp;
 pub mod open_file;
 pub mod plugin;
 pub mod session;
+pub mod shared;
 pub mod terminal;
 pub mod todo;
 pub mod update;

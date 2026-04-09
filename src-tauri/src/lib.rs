@@ -251,6 +251,8 @@ pub fn run() {
             commands::git::is_git_repository,
             commands::git::is_git_worktree,
             commands::git::detect_repositories,
+            // Filesystem commands
+            commands::filesystem::list_directory,
             // Session commands (new)
             commands::session::get_sessions,
             commands::session::create_session,

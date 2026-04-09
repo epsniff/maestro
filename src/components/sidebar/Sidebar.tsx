@@ -61,9 +61,10 @@ import { useQuickActionStore } from "@/stores/useQuickActionStore";
 import { type AiMode, type BackendSessionStatus, useSessionStore } from "@/stores/useSessionStore";
 import { useUsageStore } from "@/stores/useUsageStore";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
+import { FileExplorer } from "./FileExplorer";
 import { TemplatesSection } from "./TemplatesSection";
 
-type SidebarTab = "config" | "processes";
+type SidebarTab = "config" | "files" | "processes";
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -130,6 +131,18 @@ export function Sidebar({ collapsed, theme, onToggleTheme }: SidebarProps) {
         </button>
         <button
           type="button"
+          onClick={() => setActiveTab("files")}
+          className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold tracking-wide uppercase ${
+            activeTab === "files"
+              ? "border-b-2 border-maestro-accent text-maestro-accent"
+              : "text-maestro-muted hover:text-maestro-text"
+          }`}
+        >
+          <FolderGit2 size={12} />
+          Files
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab("processes")}
           className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold tracking-wide uppercase ${
             activeTab === "processes"
@@ -146,6 +159,8 @@ export function Sidebar({ collapsed, theme, onToggleTheme }: SidebarProps) {
       <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-2.5 py-3">
         {activeTab === "config" ? (
           <ConfigTab theme={theme} onToggleTheme={onToggleTheme} />
+        ) : activeTab === "files" ? (
+          <FileExplorer />
         ) : (
           <ProcessesTab />
         )}

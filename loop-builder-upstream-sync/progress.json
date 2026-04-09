@@ -66,15 +66,15 @@
     {
       "id": "file-explorer",
       "name": "File system explorer tab in sidebar",
-      "status": "pending",
+      "status": "done",
       "instruction_file": "loop-builder-upstream-sync/instructions/scope-file-explorer.md",
       "type": "new-feature",
-      "approach": null,
-      "notes": null
+      "approach": "new implementation",
+      "notes": "Added list_directory Rust command with filtering/sorting. Created FileExplorer.tsx with lazy-load tree, context menu (open as file session, copy path, copy relative path), dedup detection for existing file sessions. Added 'Files' tab to sidebar between Config and Processes. Drag-to-terminal deferred."
     }
   ],
-  "completed": ["upstream-216", "upstream-217", "upstream-220", "file-dragdrop", "stale-sessions", "instance-id", "file-path-input"],
-  "iteration": 7,
+  "completed": ["upstream-216", "upstream-217", "upstream-220", "file-dragdrop", "stale-sessions", "instance-id", "file-path-input", "file-explorer"],
+  "iteration": 8,
   "pivot_count": 0,
   "max_pivots": 3
 }
