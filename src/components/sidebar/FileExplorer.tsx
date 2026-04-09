@@ -8,6 +8,7 @@ import {
   FileText,
   Folder,
   FolderOpen,
+  FolderPlus,
   Loader2,
   Pencil,
   Trash2,
@@ -233,6 +234,10 @@ export function FileExplorer() {
   const [newFileName, setNewFileName] = useState("");
   const [newFileError, setNewFileError] = useState<string | null>(null);
   const newFileInputRef = useRef<HTMLInputElement>(null);
+  const [newFolderDir, setNewFolderDir] = useState<string | null>(null);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderError, setNewFolderError] = useState<string | null>(null);
+  const newFolderInputRef = useRef<HTMLInputElement>(null);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
 
   // Load root directory
@@ -272,6 +277,13 @@ export function FileExplorer() {
     }
   }, [newFileDir]);
 
+  // Focus the new folder input when it appears
+  useEffect(() => {
+    if (newFolderDir && newFolderInputRef.current) {
+      newFolderInputRef.current.focus();
+    }
+  }, [newFolderDir]);
+
   const handleNewFile = useCallback(
     (ctxPath: string, isDir: boolean) => {
       const dir = isDir ? ctxPath : ctxPath.substring(0, ctxPath.lastIndexOf("/"));
@@ -301,6 +313,37 @@ export function FileExplorer() {
     setNewFileDir(null);
     setNewFileName("");
     setNewFileError(null);
+  }, []);
+
+  const handleNewFolder = useCallback(
+    (ctxPath: string, isDir: boolean) => {
+      const dir = isDir ? ctxPath : ctxPath.substring(0, ctxPath.lastIndexOf("/"));
+      setNewFolderDir(dir);
+      setNewFolderName("");
+      setNewFolderError(null);
+      setCtxMenu(null);
+    },
+    [],
+  );
+
+  const submitNewFolder = useCallback(async () => {
+    if (!newFolderDir || !newFolderName.trim()) return;
+    const fullPath = `${newFolderDir}/${newFolderName.trim()}`;
+    try {
+      await invoke("create_directory", { path: fullPath, projectRoot: projectPath });
+      setNewFolderDir(null);
+      setNewFolderName("");
+      setNewFolderError(null);
+      refreshRoot();
+    } catch (e) {
+      setNewFolderError(String(e));
+    }
+  }, [newFolderDir, newFolderName, projectPath, refreshRoot]);
+
+  const cancelNewFolder = useCallback(() => {
+    setNewFolderDir(null);
+    setNewFolderName("");
+    setNewFolderError(null);
   }, []);
 
   const handleOpenFile = useCallback(
@@ -459,6 +502,14 @@ export function FileExplorer() {
           </button>
           <button
             type="button"
+            onClick={() => handleNewFolder(ctxMenu.path, ctxMenu.isDir)}
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-maestro-text hover:bg-maestro-border/40"
+          >
+            <FolderPlus size={12} />
+            New folder
+          </button>
+          <button
+            type="button"
             onClick={() => copyToClipboard(ctxMenu.path)}
             className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-maestro-text hover:bg-maestro-border/40"
           >
@@ -540,6 +591,57 @@ export function FileExplorer() {
                 type="button"
                 onClick={submitNewFile}
                 disabled={!newFileName.trim()}
+                className="rounded bg-maestro-accent px-2 py-0.5 text-xs text-white disabled:opacity-50"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New folder inline input */}
+      {newFolderDir && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-32">
+          <div className="rounded border border-maestro-border bg-maestro-card p-3 shadow-lg">
+            <div className="mb-2 text-xs text-maestro-muted">
+              New folder in{" "}
+              <span className="text-maestro-text">
+                {newFolderDir.startsWith(projectPath)
+                  ? newFolderDir.slice(projectPath.length + 1) || "/"
+                  : newFolderDir}
+              </span>
+            </div>
+            <input
+              ref={newFolderInputRef}
+              type="text"
+              value={newFolderName}
+              onChange={(e) => {
+                setNewFolderName(e.target.value);
+                setNewFolderError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitNewFolder();
+                if (e.key === "Escape") cancelNewFolder();
+              }}
+              placeholder="folder-name"
+              className="w-full rounded border border-maestro-border bg-maestro-bg px-2 py-1 text-xs text-maestro-text outline-none focus:border-maestro-accent"
+            />
+            {newFolderError && (
+              <div className="mt-1 text-xs text-red-400">{newFolderError}</div>
+            )}
+            <div className="mt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={cancelNewFolder}
+                className="rounded px-2 py-0.5 text-xs text-maestro-muted hover:bg-maestro-border/40"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitNewFolder}
+                disabled={!newFolderName.trim()}
                 className="rounded bg-maestro-accent px-2 py-0.5 text-xs text-white disabled:opacity-50"
               >
                 Create

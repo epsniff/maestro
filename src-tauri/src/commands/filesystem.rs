@@ -151,6 +151,34 @@ pub async fn rename_path(
     Ok(())
 }
 
+/// Creates a directory at the given path.
+/// Refuses to create if the path already exists or is outside the project root.
+#[tauri::command]
+pub async fn create_directory(path: String, project_root: String) -> Result<(), String> {
+    let dir_path = std::path::Path::new(&path);
+    let root = std::path::Path::new(&project_root)
+        .canonicalize()
+        .map_err(|e| format!("Invalid project root: {}", e))?;
+
+    // Validate parent exists and is within project root
+    if let Some(parent) = dir_path.parent() {
+        let canon_parent = parent
+            .canonicalize()
+            .map_err(|e| format!("Invalid parent directory: {}", e))?;
+        if !canon_parent.starts_with(&root) {
+            return Err("Cannot create directories outside the project root".to_string());
+        }
+    }
+
+    if dir_path.exists() {
+        return Err(format!("Already exists: {}", path));
+    }
+
+    std::fs::create_dir(dir_path).map_err(|e| format!("Failed to create directory: {}", e))?;
+
+    Ok(())
+}
+
 /// Creates an empty file at the given path. Errors if the file already exists.
 #[tauri::command]
 pub async fn create_file(path: String) -> Result<(), String> {
