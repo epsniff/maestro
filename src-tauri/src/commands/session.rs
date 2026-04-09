@@ -7,7 +7,9 @@ use crate::core::mcp_config_writer;
 use crate::core::mcp_manager::McpManager;
 use crate::core::plugin_manager::PluginManager;
 use crate::core::process_manager::ProcessManager;
-use crate::core::session_manager::{AiMode, SessionConfig, SessionKind, SessionManager, SessionStatus};
+use crate::core::session_manager::{
+    AiMode, SessionConfig, SessionKind, SessionManager, SessionStatus,
+};
 use crate::core::status_server::StatusServer;
 
 /// Exposes `SessionManager::all_sessions` to the frontend.
@@ -42,7 +44,8 @@ pub async fn create_session(
         }
     };
 
-    state.create_session(id, mode, canonical)
+    state
+        .create_session(id, mode, canonical)
         .map_err(|existing| format!("Session {} already exists", existing.id))
 }
 
@@ -95,6 +98,20 @@ pub async fn assign_session_branch(
 ) -> Result<SessionConfig, String> {
     state
         .assign_branch(session_id, branch, worktree_path)
+        .ok_or_else(|| format!("Session {} not found", session_id))
+}
+
+/// Renames a session. Empty or whitespace-only names are treated as `None`,
+/// which resets the display name to the default `{provider} #{id}` format.
+#[tauri::command]
+pub async fn rename_session(
+    state: State<'_, SessionManager>,
+    session_id: u32,
+    name: Option<String>,
+) -> Result<SessionConfig, String> {
+    let normalized = name.map(|n| n.trim().to_string()).filter(|n| !n.is_empty());
+    state
+        .rename_session(session_id, normalized)
         .ok_or_else(|| format!("Session {} not found", session_id))
 }
 
@@ -156,7 +173,8 @@ pub async fn remove_sessions_for_project(
                 .as_deref()
                 .unwrap_or(&session.project_path);
             if let Err(e) =
-                mcp_config_writer::remove_session_mcp_config(Path::new(working_dir), session.id).await
+                mcp_config_writer::remove_session_mcp_config(Path::new(working_dir), session.id)
+                    .await
             {
                 log::warn!(
                     "Failed to remove MCP config for session {}: {}",

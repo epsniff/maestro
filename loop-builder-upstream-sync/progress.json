@@ -21,11 +21,11 @@
     {
       "id": "upstream-220",
       "name": "Session renaming with backend persistence (#220)",
-      "status": "pending",
+      "status": "done",
       "instruction_file": "loop-builder-upstream-sync/instructions/scope-220-session-renaming.md",
       "type": "upstream-port",
-      "approach": null,
-      "notes": null
+      "approach": "reimplementation",
+      "notes": "Added name field to Rust SessionConfig, rename_session method + Tauri command. Updated frontend renameSession to invoke backend. Fork already had sidebar + header rename UI."
     },
     {
       "id": "file-dragdrop",
@@ -73,8 +73,8 @@
       "notes": null
     }
   ],
-  "completed": ["upstream-216", "upstream-217"],
-  "iteration": 2,
+  "completed": ["upstream-216", "upstream-217", "upstream-220"],
+  "iteration": 3,
   "pivot_count": 0,
   "max_pivots": 3
 }

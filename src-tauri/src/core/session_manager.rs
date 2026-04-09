@@ -48,6 +48,7 @@ pub struct SessionConfig {
     pub id: u32,
     pub kind: SessionKind,
     pub mode: AiMode,
+    pub name: Option<String>,
     pub branch: Option<String>,
     pub status: SessionStatus,
     pub worktree_path: Option<String>,
@@ -94,6 +95,7 @@ impl SessionManager {
             id,
             kind: SessionKind::Terminal,
             mode,
+            name: None,
             branch: None,
             status: SessionStatus::Idle,
             worktree_path: None,
@@ -125,6 +127,7 @@ impl SessionManager {
             id,
             kind: SessionKind::OpenFile,
             mode: AiMode::Plain,
+            name: None,
             branch: None,
             status: SessionStatus::Idle,
             worktree_path: None,
@@ -156,9 +159,25 @@ impl SessionManager {
         }
     }
 
+    /// Updates the session's display name. Pass `None` to reset to the default.
+    /// Returns the updated config, or `None` if the session does not exist.
+    pub fn rename_session(&self, id: u32, name: Option<String>) -> Option<SessionConfig> {
+        if let Some(mut session) = self.sessions.get_mut(&id) {
+            session.name = name;
+            Some(session.clone())
+        } else {
+            None
+        }
+    }
+
     /// Associates a branch (and optional worktree path) with an existing session.
     /// Returns the updated config, or `None` if the session does not exist.
-    pub fn assign_branch(&self, id: u32, branch: String, worktree_path: Option<String>) -> Option<SessionConfig> {
+    pub fn assign_branch(
+        &self,
+        id: u32,
+        branch: String,
+        worktree_path: Option<String>,
+    ) -> Option<SessionConfig> {
         if let Some(mut session) = self.sessions.get_mut(&id) {
             session.branch = Some(branch);
             session.worktree_path = worktree_path;
@@ -191,7 +210,8 @@ impl SessionManager {
     /// Removes all sessions for a project. Returns the removed configs.
     /// Useful when closing a project tab.
     pub fn remove_sessions_for_project(&self, project_path: &str) -> Vec<SessionConfig> {
-        let ids_to_remove: Vec<u32> = self.sessions
+        let ids_to_remove: Vec<u32> = self
+            .sessions
             .iter()
             .filter(|entry| entry.value().project_path == project_path)
             .map(|entry| *entry.key())

@@ -47,8 +47,8 @@ export interface SessionConfig {
   needsInputPrompt?: string;
   /** Timestamp of the last MCP-driven status update (used by activity heuristic). */
   lastMcpUpdateTime?: number;
-  /** User-defined display name (frontend-only, not persisted to backend). */
-  name?: string;
+  /** User-defined display name, persisted to backend. */
+  name?: string | null;
 }
 
 /** Shape of the Tauri `session-status-changed` event payload. */
@@ -82,7 +82,7 @@ interface SessionState {
   removeSessionsForProject: (projectPath: string) => Promise<SessionConfig[]>;
   updateSession: (sessionId: number, updates: Partial<SessionConfig>) => void;
   getSessionsByProject: (projectPath: string) => SessionConfig[];
-  renameSession: (sessionId: number, name: string) => void;
+  renameSession: (sessionId: number, name: string | null) => Promise<void>;
   setFocusedSessionId: (sessionId: number | null) => void;
   initListeners: () => Promise<UnlistenFn>;
 }
@@ -169,8 +169,12 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
     const bufferKey = statusBufferKey(session.id, session.project_path);
     const bufferedStatus = pendingStatusUpdates.get(bufferKey);
 
-    console.log(`[SessionStore] addSession id=${session.id} project_path='${session.project_path}'`);
-    console.log(`[SessionStore] Buffer key: '${bufferKey}', has buffered status: ${!!bufferedStatus}`);
+    console.log(
+      `[SessionStore] addSession id=${session.id} project_path='${session.project_path}'`,
+    );
+    console.log(
+      `[SessionStore] Buffer key: '${bufferKey}', has buffered status: ${!!bufferedStatus}`,
+    );
     if (pendingStatusUpdates.size > 0) {
       console.log("[SessionStore] All buffered keys:", Array.from(pendingStatusUpdates.keys()));
     }
@@ -207,7 +211,9 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
         const currentState = get();
         const currentSession = currentState.sessions.find((s) => s.id === session.id);
         if (currentSession && currentSession.status === "Starting") {
-          console.warn(`[SessionStore] Session ${session.id} startup timeout after ${SESSION_STARTUP_TIMEOUT_MS}ms`);
+          console.warn(
+            `[SessionStore] Session ${session.id} startup timeout after ${SESSION_STARTUP_TIMEOUT_MS}ms`,
+          );
           set((state) => ({
             sessions: state.sessions.map((s) =>
               s.id === session.id
@@ -216,7 +222,7 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
                     status: "Timeout" as BackendSessionStatus,
                     statusMessage: "CLI failed to start - check terminal for errors",
                   }
-                : s
+                : s,
             ),
           }));
         }
@@ -236,9 +242,7 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
 
   updateSession: (sessionId: number, updates: Partial<SessionConfig>) => {
     set((state) => ({
-      sessions: state.sessions.map((s) =>
-        s.id === sessionId ? { ...s, ...updates } : s
-      ),
+      sessions: state.sessions.map((s) => (s.id === sessionId ? { ...s, ...updates } : s)),
     }));
   },
 
@@ -265,9 +269,7 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
       });
       // Remove the sessions from local state
       set((state) => ({
-        sessions: state.sessions.filter(
-          (s) => !removed.some((r) => r.id === s.id)
-        ),
+        sessions: state.sessions.filter((s) => !removed.some((r) => r.id === s.id)),
       }));
       return removed;
     } catch (err) {
@@ -276,13 +278,20 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
     }
   },
 
-  renameSession: (sessionId: number, name: string) => {
-    const trimmed = name.slice(0, 50);
-    set((state) => ({
-      sessions: state.sessions.map((s) =>
-        s.id === sessionId ? { ...s, name: trimmed || undefined } : s
-      ),
-    }));
+  renameSession: async (sessionId: number, name: string | null) => {
+    try {
+      const updated = await invoke<SessionConfig>("rename_session", {
+        sessionId,
+        name,
+      });
+      set((state) => ({
+        sessions: state.sessions.map((s) =>
+          s.id === sessionId ? { ...s, name: updated.name } : s,
+        ),
+      }));
+    } catch (err) {
+      console.error("Failed to rename session:", err);
+    }
   },
 
   setFocusedSessionId: (sessionId: number | null) => {
@@ -305,13 +314,15 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
 
             // Check if session exists in store
             const sessionExists = get().sessions.some(
-              (s) => s.id === session_id && s.project_path === project_path
+              (s) => s.id === session_id && s.project_path === project_path,
             );
 
             if (!sessionExists) {
               // Buffer this status update - it will be applied when the session is added
               const bufferKey = statusBufferKey(session_id, project_path);
-              console.log(`[SessionStore] Buffering status for non-existent session. Key: '${bufferKey}'`);
+              console.log(
+                `[SessionStore] Buffering status for non-existent session. Key: '${bufferKey}'`,
+              );
               pendingStatusUpdates.set(bufferKey, event.payload);
               return;
             }
@@ -331,7 +342,7 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
                       needsInputPrompt: needs_input_prompt,
                       lastMcpUpdateTime: Date.now(),
                     }
-                  : s
+                  : s,
               ),
             }));
           })

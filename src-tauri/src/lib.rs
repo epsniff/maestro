@@ -11,12 +11,12 @@ use tauri::{Emitter, Manager};
 use core::marketplace_manager::MarketplaceManager;
 use core::mcp_manager::McpManager;
 use core::plugin_manager::PluginManager;
-use core::status_server::StatusServer;
-use core::{ClaudeEvent, EventBus, TranscriptWatcher};
-use core::ProcessManager;
 use core::session_manager::SessionManager;
+use core::status_server::StatusServer;
 use core::todo_manager::TodoManager;
 use core::worktree_manager::WorktreeManager;
+use core::ProcessManager;
+use core::{ClaudeEvent, EventBus, TranscriptWatcher};
 
 /// Entry point for the Tauri application.
 ///
@@ -72,9 +72,17 @@ pub fn run() {
                 .build()?;
 
             // View submenu with terminal font zoom controls
-            let zoom_in = MenuItem::with_id(handle, "zoom-in", "Zoom In", true, Some("CmdOrCtrl+="))?;
-            let zoom_out = MenuItem::with_id(handle, "zoom-out", "Zoom Out", true, Some("CmdOrCtrl+-"))?;
-            let zoom_reset = MenuItem::with_id(handle, "zoom-reset", "Actual Size", true, Some("CmdOrCtrl+0"))?;
+            let zoom_in =
+                MenuItem::with_id(handle, "zoom-in", "Zoom In", true, Some("CmdOrCtrl+="))?;
+            let zoom_out =
+                MenuItem::with_id(handle, "zoom-out", "Zoom Out", true, Some("CmdOrCtrl+-"))?;
+            let zoom_reset = MenuItem::with_id(
+                handle,
+                "zoom-reset",
+                "Actual Size",
+                true,
+                Some("CmdOrCtrl+0"),
+            )?;
             let view_menu = SubmenuBuilder::new(handle, "View")
                 .item(&zoom_in)
                 .item(&zoom_out)
@@ -114,7 +122,9 @@ pub fn run() {
         .manage(WorktreeManager::new())
         .setup(|app| {
             // Create TodoManager with persistence in app data dir
-            let app_data_dir = app.path().app_data_dir()
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
                 .expect("Failed to resolve app data directory");
             core::launch_diagnostics::init(app_data_dir.clone());
             let todo_manager = Arc::new(TodoManager::new(app_data_dir));
@@ -127,9 +137,10 @@ pub fn run() {
 
             // Create EventBus - emits events to frontend via Tauri
             let app_handle_for_bus = app.handle().clone();
-            let emit_fn: Arc<dyn Fn(ClaudeEvent) + Send + Sync> = Arc::new(move |event: ClaudeEvent| {
-                let _ = app_handle_for_bus.emit("claude-event", &event);
-            });
+            let emit_fn: Arc<dyn Fn(ClaudeEvent) + Send + Sync> =
+                Arc::new(move |event: ClaudeEvent| {
+                    let _ = app_handle_for_bus.emit("claude-event", &event);
+                });
             let event_bus = Arc::new(EventBus::new(emit_fn));
 
             // Create TranscriptWatcher
@@ -139,21 +150,29 @@ pub fn run() {
             // When SessionStarted events arrive via hooks, start watching the transcript
             let event_bus_for_hooks = event_bus.clone();
             let transcript_watcher_for_hooks = transcript_watcher.clone();
-            let hook_emit_fn: Arc<dyn Fn(ClaudeEvent) + Send + Sync> = Arc::new(move |event: ClaudeEvent| {
-                if let ClaudeEvent::SessionStarted { session_id, ref transcript_path, .. } = event {
-                    transcript_watcher_for_hooks.start_watching(
+            let hook_emit_fn: Arc<dyn Fn(ClaudeEvent) + Send + Sync> =
+                Arc::new(move |event: ClaudeEvent| {
+                    if let ClaudeEvent::SessionStarted {
                         session_id,
-                        std::path::PathBuf::from(transcript_path),
-                    );
-                }
-                event_bus_for_hooks.emit(event);
-            });
+                        ref transcript_path,
+                        ..
+                    } = event
+                    {
+                        transcript_watcher_for_hooks
+                            .start_watching(session_id, std::path::PathBuf::from(transcript_path));
+                    }
+                    event_bus_for_hooks.emit(event);
+                });
 
             // Create todo-changed emit callback
             let app_handle_for_todo = app.handle().clone();
-            let todo_emit_fn: Arc<dyn Fn(String) + Send + Sync> = Arc::new(move |project_path: String| {
-                let _ = app_handle_for_todo.emit("todo-changed", serde_json::json!({ "project_path": project_path }));
-            });
+            let todo_emit_fn: Arc<dyn Fn(String) + Send + Sync> =
+                Arc::new(move |project_path: String| {
+                    let _ = app_handle_for_todo.emit(
+                        "todo-changed",
+                        serde_json::json!({ "project_path": project_path }),
+                    );
+                });
 
             // Start the HTTP status server for MCP status reporting
             // IMPORTANT: This must be done synchronously so the server is ready
@@ -166,7 +185,8 @@ pub fn run() {
                     Some(hook_emit_fn),
                     Some(todo_manager),
                     Some(todo_emit_fn),
-                ).await
+                )
+                .await
             });
 
             match server {
@@ -179,7 +199,9 @@ pub fn run() {
                     app.manage(Arc::new(server));
                 }
                 None => {
-                    log::error!("Failed to start status server - MCP status reporting will not work");
+                    log::error!(
+                        "Failed to start status server - MCP status reporting will not work"
+                    );
                     // Return error to prevent app from starting without status server
                     return Err("Failed to start status server".into());
                 }
@@ -235,6 +257,7 @@ pub fn run() {
             commands::session::create_file_session,
             commands::session::update_session_status,
             commands::session::assign_session_branch,
+            commands::session::rename_session,
             commands::session::remove_session,
             commands::session::get_sessions_for_project,
             commands::session::remove_sessions_for_project,

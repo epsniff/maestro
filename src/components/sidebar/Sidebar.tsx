@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import {
   Activity,
   AlertTriangle,
@@ -33,30 +34,33 @@ import {
   Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { type AiMode, type BackendSessionStatus, useSessionStore } from "@/stores/useSessionStore";
-import { useGitStore } from "@/stores/useGitStore";
-import { useMcpStore } from "@/stores/useMcpStore";
-import { usePluginStore } from "@/stores/usePluginStore";
-import { useMarketplaceStore } from "@/stores/useMarketplaceStore";
-import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { useProcessTreeStore, type ProcessInfo, type SessionProcessTree } from "@/stores/useProcessTreeStore";
-import { useUsageStore } from "@/stores/useUsageStore";
+import { ClaudeMdEditorModal } from "@/components/claudemd";
 import { GitSettingsModal, RemoteStatusIndicator } from "@/components/git";
-import { QuickActionsManager } from "@/components/quickactions/QuickActionsManager";
-import { DynamicIcon } from "@/components/quickactions/DynamicIcon";
-import { useQuickActionStore } from "@/stores/useQuickActionStore";
+import { OpenCodeIcon } from "@/components/icons/OpenCodeIcon";
 import { MarketplaceBrowser } from "@/components/marketplace";
 import { McpServerEditorModal } from "@/components/mcp";
-import { ClaudeMdEditorModal } from "@/components/claudemd";
-import { CliSettingsModal } from "@/components/terminal/CliSettingsModal";
-import { TerminalSettingsModal } from "@/components/terminal/TerminalSettingsModal";
+import { DynamicIcon } from "@/components/quickactions/DynamicIcon";
+import { QuickActionsManager } from "@/components/quickactions/QuickActionsManager";
 import { HotkeySettingsModal, MaestroSettingsModal } from "@/components/settings";
 import { Tamagotchi } from "@/components/tamagotchi";
+import { CliSettingsModal } from "@/components/terminal/CliSettingsModal";
+import { TerminalSettingsModal } from "@/components/terminal/TerminalSettingsModal";
+import { type ClaudeMdStatus, checkClaudeMd } from "@/lib/claudemd";
 import type { McpCustomServer } from "@/lib/mcp";
-import { checkClaudeMd, type ClaudeMdStatus } from "@/lib/claudemd";
 import { writeStdin } from "@/lib/terminal";
-import { OpenCodeIcon } from "@/components/icons/OpenCodeIcon";
+import { useGitStore } from "@/stores/useGitStore";
+import { useMarketplaceStore } from "@/stores/useMarketplaceStore";
+import { useMcpStore } from "@/stores/useMcpStore";
+import { usePluginStore } from "@/stores/usePluginStore";
+import {
+  type ProcessInfo,
+  type SessionProcessTree,
+  useProcessTreeStore,
+} from "@/stores/useProcessTreeStore";
+import { useQuickActionStore } from "@/stores/useQuickActionStore";
+import { type AiMode, type BackendSessionStatus, useSessionStore } from "@/stores/useSessionStore";
+import { useUsageStore } from "@/stores/useUsageStore";
+import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { TemplatesSection } from "./TemplatesSection";
 
 type SidebarTab = "config" | "processes";
@@ -105,7 +109,9 @@ export function Sidebar({ collapsed, theme, onToggleTheme }: SidebarProps) {
   return (
     <aside
       className={`theme-transition no-select relative flex h-full w-full min-w-0 flex-col overflow-hidden border-r border-maestro-border bg-maestro-surface ${
-        collapsed ? "overflow-hidden border-r-0 opacity-0" : "opacity-100 transition-all duration-200 ease-out"
+        collapsed
+          ? "overflow-hidden border-r-0 opacity-0"
+          : "opacity-100 transition-all duration-200 ease-out"
       }`}
     >
       {/* Tab switcher */}
@@ -241,7 +247,9 @@ function GitRepositorySection() {
 
   // Fetch default worktree base dir on mount
   useEffect(() => {
-    invoke<string>("get_default_worktree_base_dir").then(setDefaultWorktreeBase).catch(() => {});
+    invoke<string>("get_default_worktree_base_dir")
+      .then(setDefaultWorktreeBase)
+      .catch(() => {});
   }, []);
 
   // Fetch data on mount and when repoPath changes
@@ -285,11 +293,7 @@ function GitRepositorySection() {
   if (!repoPath) {
     return (
       <div className={cardClass}>
-        <SectionHeader
-          icon={GitBranch}
-          label="Git Repository"
-          iconColor="text-maestro-muted"
-        />
+        <SectionHeader icon={GitBranch} label="Git Repository" iconColor="text-maestro-muted" />
         <div className="px-1 py-1 text-xs text-maestro-muted">No project selected</div>
       </div>
     );
@@ -344,7 +348,9 @@ function GitRepositorySection() {
           <div className="mt-2 border-t border-maestro-border/30 pt-2 min-w-0 overflow-hidden">
             <div className="flex items-center gap-2 px-1 py-1 min-w-0">
               <FolderGit2 size={12} className="text-maestro-accent shrink-0" />
-              <span className="text-xs font-semibold text-maestro-text truncate min-w-0">Worktrees</span>
+              <span className="text-xs font-semibold text-maestro-text truncate min-w-0">
+                Worktrees
+              </span>
               {!worktreeBasePath && (
                 <span className="text-[10px] text-maestro-muted/60 shrink-0">(default)</span>
               )}
@@ -360,7 +366,11 @@ function GitRepositorySection() {
       </div>
 
       {showSettings && (
-        <GitSettingsModal repoPath={repoPath} tabId={activeTab?.id ?? ""} onClose={() => setShowSettings(false)} />
+        <GitSettingsModal
+          repoPath={repoPath}
+          tabId={activeTab?.id ?? ""}
+          onClose={() => setShowSettings(false)}
+        />
       )}
     </>
   );
@@ -416,11 +426,7 @@ function ProjectContextSection() {
   if (!projectPath) {
     return (
       <div className={cardClass}>
-        <SectionHeader
-          icon={FileText}
-          label="Project Context"
-          iconColor="text-maestro-muted"
-        />
+        <SectionHeader icon={FileText} label="Project Context" iconColor="text-maestro-muted" />
         <div className="flex items-center gap-2 px-1 py-1">
           <span className="text-xs text-maestro-muted">No project selected</span>
         </div>
@@ -430,10 +436,7 @@ function ProjectContextSection() {
 
   return (
     <>
-      <div
-        className={`${cardClass} cursor-pointer`}
-        onClick={handleClick}
-      >
+      <div className={`${cardClass} cursor-pointer`} onClick={handleClick}>
         <SectionHeader
           icon={FileText}
           label="Project Context"
@@ -505,10 +508,16 @@ function SessionsSection() {
   // Filter sessions to only show those belonging to the active project
   const sessions = allSessions.filter((s) => s.project_path === activeProjectPath);
 
-  const commitRename = useCallback((sessionId: number, value: string) => {
-    renameSession(sessionId, value.trim());
-    setEditingId(null);
-  }, [renameSession]);
+  const commitRename = useCallback(
+    (sessionId: number, value: string) => {
+      const trimmed = value.trim();
+      // If empty or same as default, reset to null
+      const newName = trimmed && trimmed !== `#${sessionId}` ? trimmed : null;
+      renameSession(sessionId, newName);
+      setEditingId(null);
+    },
+    [renameSession],
+  );
 
   const cancelRename = useCallback(() => {
     setEditingId(null);
@@ -594,7 +603,14 @@ function SessionsSection() {
 
 /* ── 4. Status ── */
 
-const AI_MODES: Array<AiMode | "OpenFile"> = ["Claude", "Gemini", "Codex", "OpenCode", "Plain", "OpenFile"];
+const AI_MODES: Array<AiMode | "OpenFile"> = [
+  "Claude",
+  "Gemini",
+  "Codex",
+  "OpenCode",
+  "Plain",
+  "OpenFile",
+];
 const SESSION_STATUSES: BackendSessionStatus[] = [
   "Starting",
   "Idle",
@@ -804,7 +820,10 @@ function MCPServersSection() {
               <ChevronRight size={13} className="text-maestro-muted/80" />
             )}
           </button>
-          <Server size={13} className={totalCount > 0 ? "text-maestro-green" : "text-maestro-muted/80"} />
+          <Server
+            size={13}
+            className={totalCount > 0 ? "text-maestro-green" : "text-maestro-muted/80"}
+          />
           <span className="flex-1">MCP Servers</span>
           {totalCount > 0 && (
             <span className="bg-maestro-green/20 text-maestro-green text-[10px] px-1.5 rounded-full font-bold">
@@ -818,7 +837,10 @@ function MCPServersSection() {
               className="rounded p-0.5 hover:bg-maestro-border/40"
               title="Refresh MCP servers"
             >
-              <RefreshCw size={12} className={`text-maestro-muted ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                size={12}
+                className={`text-maestro-muted ${loading ? "animate-spin" : ""}`}
+              />
             </button>
             <button
               type="button"
@@ -926,7 +948,11 @@ function MCPServersSection() {
 import type { SkillSource } from "@/lib/plugins";
 
 /** Returns badge styling and text for a skill source. */
-function getSkillSourceBadge(source: SkillSource): { text: string; className: string; icon: React.ElementType } {
+function getSkillSourceBadge(source: SkillSource): {
+  text: string;
+  className: string;
+  icon: React.ElementType;
+} {
   switch (source.type) {
     case "project":
       return {
@@ -963,9 +989,24 @@ function PluginsSection() {
   const activeTab = tabs.find((t) => t.active);
   const projectPath = activeTab?.projectPath ?? "";
 
-  const { projectSkills, projectPlugins, fetchProjectPlugins, refreshProjectPlugins, isLoading, deleteSkill, deletingSkillId, deletePlugin, deletingPluginId } =
-    usePluginStore();
-  const { uninstallPluginById, uninstallingPluginId, installedPlugins, fetchAll: fetchMarketplace, isLoading: marketplaceLoading } = useMarketplaceStore();
+  const {
+    projectSkills,
+    projectPlugins,
+    fetchProjectPlugins,
+    refreshProjectPlugins,
+    isLoading,
+    deleteSkill,
+    deletingSkillId,
+    deletePlugin,
+    deletingPluginId,
+  } = usePluginStore();
+  const {
+    uninstallPluginById,
+    uninstallingPluginId,
+    installedPlugins,
+    fetchAll: fetchMarketplace,
+    isLoading: marketplaceLoading,
+  } = useMarketplaceStore();
   const [marketplaceFetched, setMarketplaceFetched] = useState(false);
   const skills = projectPath ? (projectSkills[projectPath] ?? []) : [];
   const plugins = projectPath ? (projectPlugins[projectPath] ?? []) : [];
@@ -1039,47 +1080,70 @@ function PluginsSection() {
   }, [projectPath, refreshProjectPlugins]);
 
   // Handle uninstalling a plugin (installed or marketplace)
-  const handleUninstallPlugin = useCallback(async (e: React.MouseEvent, pluginId: string, pluginPath: string | null, pluginSource: string) => {
-    e.stopPropagation();
+  const handleUninstallPlugin = useCallback(
+    async (
+      e: React.MouseEvent,
+      pluginId: string,
+      pluginPath: string | null,
+      pluginSource: string,
+    ) => {
+      e.stopPropagation();
 
-    // For "installed" plugins (manually installed to ~/.claude/plugins/), delete directly
-    if (pluginSource === "installed" && pluginPath && projectPath) {
-      await deletePlugin(pluginId, pluginPath, projectPath);
-      return;
-    }
-
-    // For "marketplace" plugins, use the marketplace uninstall
-    const installedPlugin = installedPlugins.find(
-      (p) => p.path === pluginPath || p.plugin_id === pluginId || p.id === pluginId
-    );
-    if (installedPlugin) {
-      await uninstallPluginById(installedPlugin.id);
-      // Refresh both marketplace and plugins lists
-      await fetchMarketplace();
-      if (projectPath) {
-        await refreshProjectPlugins(projectPath);
+      // For "installed" plugins (manually installed to ~/.claude/plugins/), delete directly
+      if (pluginSource === "installed" && pluginPath && projectPath) {
+        await deletePlugin(pluginId, pluginPath, projectPath);
+        return;
       }
-    } else {
-      console.warn("Could not find installed plugin to uninstall:", { pluginId, pluginPath, pluginSource, installedPlugins });
-    }
-  }, [installedPlugins, uninstallPluginById, fetchMarketplace, projectPath, refreshProjectPlugins, deletePlugin]);
+
+      // For "marketplace" plugins, use the marketplace uninstall
+      const installedPlugin = installedPlugins.find(
+        (p) => p.path === pluginPath || p.plugin_id === pluginId || p.id === pluginId,
+      );
+      if (installedPlugin) {
+        await uninstallPluginById(installedPlugin.id);
+        // Refresh both marketplace and plugins lists
+        await fetchMarketplace();
+        if (projectPath) {
+          await refreshProjectPlugins(projectPath);
+        }
+      } else {
+        console.warn("Could not find installed plugin to uninstall:", {
+          pluginId,
+          pluginPath,
+          pluginSource,
+          installedPlugins,
+        });
+      }
+    },
+    [
+      installedPlugins,
+      uninstallPluginById,
+      fetchMarketplace,
+      projectPath,
+      refreshProjectPlugins,
+      deletePlugin,
+    ],
+  );
 
   // Handle deleting a standalone skill
-  const handleDeleteSkill = useCallback(async (e: React.MouseEvent, skillId: string, skillPath: string | null) => {
-    e.stopPropagation();
-    if (!skillPath || !projectPath) return;
-    // skill.path points to SKILL.md file, we need the parent directory
-    const skillDir = skillPath.replace(/\/[^/]+$/, ""); // Remove filename to get directory
-    await deleteSkill(skillId, skillDir, projectPath);
-  }, [deleteSkill, projectPath]);
+  const handleDeleteSkill = useCallback(
+    async (e: React.MouseEvent, skillId: string, skillPath: string | null) => {
+      e.stopPropagation();
+      if (!skillPath || !projectPath) return;
+      // skill.path points to SKILL.md file, we need the parent directory
+      const skillDir = skillPath.replace(/\/[^/]+$/, ""); // Remove filename to get directory
+      await deleteSkill(skillId, skillDir, projectPath);
+    },
+    [deleteSkill, projectPath],
+  );
 
   // Check if a plugin can be uninstalled (installed or marketplace, not builtin)
-  const canUninstallPlugin = (plugin: typeof plugins[0]) => {
+  const canUninstallPlugin = (plugin: (typeof plugins)[0]) => {
     return plugin.plugin_source === "installed" || plugin.plugin_source === "marketplace";
   };
 
   // Check if a skill can be deleted (project or personal, not plugin-owned or legacy)
-  const canDeleteSkill = (skill: typeof skills[0]) => {
+  const canDeleteSkill = (skill: (typeof skills)[0]) => {
     return (skill.source.type === "project" || skill.source.type === "personal") && skill.path;
   };
 
@@ -1097,7 +1161,10 @@ function PluginsSection() {
             <ChevronRight size={13} className="text-maestro-muted/80" />
           )}
         </button>
-        <Store size={13} className={totalCount > 0 ? "text-maestro-purple" : "text-maestro-muted/80"} />
+        <Store
+          size={13}
+          className={totalCount > 0 ? "text-maestro-purple" : "text-maestro-muted/80"}
+        />
         <span className="flex-1">Plugins & Skills</span>
         {totalCount > 0 && (
           <span className="bg-maestro-purple/20 text-maestro-purple text-[10px] px-1.5 rounded-full font-bold">
@@ -1111,7 +1178,10 @@ function PluginsSection() {
             className="rounded p-0.5 hover:bg-maestro-border/40"
             title="Refresh plugins"
           >
-            <RefreshCw size={12} className={`text-maestro-muted ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              size={12}
+              className={`text-maestro-muted ${loading ? "animate-spin" : ""}`}
+            />
           </button>
           <button
             type="button"
@@ -1130,9 +1200,7 @@ function PluginsSection() {
             <div className="px-2 py-1 text-[11px] text-maestro-muted/60">No project selected</div>
           ) : totalCount === 0 ? (
             <>
-              <div className="px-2 py-1 text-[11px] text-maestro-muted/60">
-                No skills found
-              </div>
+              <div className="px-2 py-1 text-[11px] text-maestro-muted/60">No skills found</div>
               <div className="px-2 text-[10px] text-maestro-muted/40">
                 Add skills to .claude/skills/ or ~/.claude/skills/
               </div>
@@ -1150,7 +1218,8 @@ function PluginsSection() {
                     const isPluginExpanded = expandedPlugins.has(plugin.id);
                     // Check if plugin is being uninstalled/deleted
                     const matchingInstalled = installedPlugins.find(
-                      (p) => p.path === plugin.path || p.plugin_id === plugin.id || p.id === plugin.id
+                      (p) =>
+                        p.path === plugin.path || p.plugin_id === plugin.id || p.id === plugin.id,
                     );
                     const isUninstalling =
                       deletingPluginId === plugin.id ||
@@ -1178,23 +1247,38 @@ function PluginsSection() {
                               <span className="w-[10px]" />
                             )}
                             <Package size={12} className="shrink-0 text-maestro-purple" />
-                            <span className="flex-1 truncate font-medium text-left">{plugin.name}</span>
+                            <span className="flex-1 truncate font-medium text-left">
+                              {plugin.name}
+                            </span>
                           </button>
                           {pluginSkills.length > 0 && (
-                            <span className="text-[10px] text-maestro-muted">{pluginSkills.length}</span>
+                            <span className="text-[10px] text-maestro-muted">
+                              {pluginSkills.length}
+                            </span>
                           )}
                           <span className="text-[10px] text-maestro-muted">v{plugin.version}</span>
                           {canUninstallPlugin(plugin) && (
                             <button
                               type="button"
-                              onClick={(e) => handleUninstallPlugin(e, plugin.id, plugin.path, plugin.plugin_source)}
+                              onClick={(e) =>
+                                handleUninstallPlugin(
+                                  e,
+                                  plugin.id,
+                                  plugin.path,
+                                  plugin.plugin_source,
+                                )
+                              }
                               disabled={isUninstalling}
                               className="shrink-0 rounded p-0.5 opacity-0 group-hover:opacity-100 hover:bg-maestro-red/10 transition-opacity"
                               title="Uninstall plugin"
                             >
                               <Trash2
                                 size={10}
-                                className={isUninstalling ? "text-maestro-muted animate-pulse" : "text-maestro-red"}
+                                className={
+                                  isUninstalling
+                                    ? "text-maestro-muted animate-pulse"
+                                    : "text-maestro-red"
+                                }
                               />
                             </button>
                           )}
@@ -1251,7 +1335,9 @@ function PluginsSection() {
                           >
                             <Trash2
                               size={10}
-                              className={isDeleting ? "text-maestro-muted animate-pulse" : "text-maestro-red"}
+                              className={
+                                isDeleting ? "text-maestro-muted animate-pulse" : "text-maestro-red"
+                              }
                             />
                           </button>
                         )}
@@ -1284,11 +1370,8 @@ function QuickActionsSection() {
   const focusedSessionId = useSessionStore((s) => s.focusedSessionId);
 
   const sortedActions = useMemo(
-    () =>
-      actions
-        .filter((a) => a.isEnabled)
-        .sort((a, b) => a.sortOrder - b.sortOrder),
-    [actions]
+    () => actions.filter((a) => a.isEnabled).sort((a, b) => a.sortOrder - b.sortOrder),
+    [actions],
   );
 
   const handleQuickAction = useCallback((prompt: string) => {
@@ -1335,9 +1418,7 @@ function QuickActionsSection() {
         </div>
       </div>
 
-      {showManager && (
-        <QuickActionsManager onClose={() => setShowManager(false)} />
-      )}
+      {showManager && <QuickActionsManager onClose={() => setShowManager(false)} />}
     </>
   );
 }
@@ -1422,15 +1503,11 @@ function AppearanceSection({
       {showTerminalSettings && (
         <TerminalSettingsModal onClose={() => setShowTerminalSettings(false)} />
       )}
-      {showCliSettings && (
-        <CliSettingsModal onClose={() => setShowCliSettings(false)} />
-      )}
+      {showCliSettings && <CliSettingsModal onClose={() => setShowCliSettings(false)} />}
       {showMaestroSettings && (
         <MaestroSettingsModal onClose={() => setShowMaestroSettings(false)} />
       )}
-      {showHotkeySettings && (
-        <HotkeySettingsModal onClose={() => setShowHotkeySettings(false)} />
-      )}
+      {showHotkeySettings && <HotkeySettingsModal onClose={() => setShowHotkeySettings(false)} />}
     </>
   );
 }
@@ -1627,7 +1704,10 @@ function ProcessTreeSection() {
               className="shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-maestro-red/20 transition-opacity"
               title={`Kill process ${process.pid}`}
             >
-              <X size={10} className={isKilling ? "text-maestro-muted animate-pulse" : "text-maestro-red"} />
+              <X
+                size={10}
+                className={isKilling ? "text-maestro-muted animate-pulse" : "text-maestro-red"}
+              />
             </button>
           )}
         </div>
@@ -1659,7 +1739,10 @@ function ProcessTreeSection() {
             <ChevronRight size={13} className="text-maestro-muted/80" />
           )}
         </button>
-        <Globe size={13} className={totalProcesses > 0 ? "text-maestro-green" : "text-maestro-muted/80"} />
+        <Globe
+          size={13}
+          className={totalProcesses > 0 ? "text-maestro-green" : "text-maestro-muted/80"}
+        />
         <span className="flex-1">Process Tree</span>
         {totalProcesses > 0 && (
           <span className="bg-maestro-green/20 text-maestro-green text-[10px] px-1.5 rounded-full font-bold">
@@ -1672,7 +1755,10 @@ function ProcessTreeSection() {
           className="rounded p-0.5 hover:bg-maestro-border/40"
           title="Refresh process tree"
         >
-          <RefreshCw size={12} className={`text-maestro-muted ${isLoading ? "animate-spin" : ""}`} />
+          <RefreshCw
+            size={12}
+            className={`text-maestro-muted ${isLoading ? "animate-spin" : ""}`}
+          />
         </button>
       </div>
 
