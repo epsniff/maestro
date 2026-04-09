@@ -25,6 +25,11 @@
 - **Note**: Maestro's CSS variables are RGB triplets (e.g. `26 26 30`), used as `rgb(var(--maestro-bg))` or with alpha as `rgb(var(--maestro-accent) / 0.2)`. The highlight style uses maestro vars for most tokens but falls back to hex for types (`#e5c07b`) and regex/urls (`#56d4dd`) where no suitable maestro var exists.
 - **Note**: The `@codemirror/theme-one-dark` package is no longer imported but remains in package.json as it's a peer dep of `@uiw/react-codemirror`. No need to remove it.
 
+## Item 7: rename-file-folder
+- **Approach**: Backend `rename_path` command validates both old and new paths are within project root (canonicalizes old path, canonicalizes new path's parent since new path doesn't exist yet). Frontend uses `renamingPath` state threaded through `FileTreeNode` to conditionally show inline `<input>` instead of the filename `<span>`.
+- **Note**: `setSelectionRange(0, dotIdx)` selects filename without extension for a nicer UX. Blur triggers commit (same as Enter) to avoid losing edits.
+- **Note**: Open file sessions referencing the old path are updated via `useSessionStore.getState().updateSession()`.
+
 ## Item 3: fix-open-file-paste-path
 - **Root cause**: The file path text input only called `onSetFilePath` (which updates `slot.filePath`) on Enter key press. The launch button checks `slot.filePath` (not the local input state), so pasting a path didn't enable the button until Enter was pressed.
 - **Fix**: Call `onSetFilePath` in the `onChange` handler on every input change, resolving relative paths against the project root. The Enter key handler still works as a "confirm and clear" action.

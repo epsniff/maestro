@@ -70,7 +70,7 @@
     {
       "id": "rename-file-folder",
       "title": "Add Rename option to right-click context menu",
-      "status": "in_progress",
+      "status": "completed",
       "description": "Add a Rename option to the FileExplorer context menu. Clicking it puts the filename into an inline editable input. Enter commits, Escape cancels. Needs a rename_path backend command.",
       "files": ["src/components/sidebar/FileExplorer.tsx", "src-tauri/src/commands/filesystem.rs"],
       "instructions": "instructions/07-rename-file-folder.md"
@@ -116,6 +116,6 @@
       "instructions": "instructions/12-move-usage-to-status-tab.md"
     }
   ],
-  "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting", "codemirror-maestro-theme", "swap-tab-order-files-first"],
-  "current_item": "rename-file-folder"
+  "completed": ["fix-copy-path", "add-new-file-context-menu", "fix-open-file-paste-path", "add-delete-file-context-menu", "install-codemirror-basic-editor", "add-language-detection-highlighting", "codemirror-maestro-theme", "swap-tab-order-files-first", "rename-file-folder"],
+  "current_item": null
 }
