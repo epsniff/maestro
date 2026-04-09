@@ -1,5 +1,8 @@
-import { memo, useEffect, useRef } from "react";
+import { memo, useCallback, useRef } from "react";
 import { useDraggable } from "@dnd-kit/core";
+import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { keymap } from "@codemirror/view";
 import { FileText, GripVertical, Loader2, Maximize2, Minimize2, Save, X } from "lucide-react";
 
 interface FileEditorViewProps {
@@ -42,18 +45,29 @@ export const FileEditorView = memo(function FileEditorView({
   onClose,
   onToggleZoom,
 }: FileEditorViewProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const cmRef = useRef<ReactCodeMirrorRef>(null);
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+
   const { attributes: dragAttributes, listeners: dragListeners, setNodeRef: setDragRef, isDragging } =
     useDraggable({
       id: slotId,
       disabled: !slotId,
     });
 
-  useEffect(() => {
-    if (isFocused) {
-      textareaRef.current?.focus();
-    }
-  }, [isFocused]);
+  const saveKeymap = useCallback(
+    () =>
+      keymap.of([
+        {
+          key: "Mod-s",
+          run: () => {
+            onSaveRef.current();
+            return true;
+          },
+        },
+      ]),
+    [],
+  );
 
   const compact = !isZoomed && terminalCount >= 5;
 
@@ -124,19 +138,23 @@ export const FileEditorView = memo(function FileEditorView({
 
       <div className="flex min-h-0 flex-1 flex-col">
         {error && <div className="border-b border-maestro-border bg-maestro-red/10 px-3 py-2 text-xs text-maestro-red">{error}</div>}
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
-              e.preventDefault();
-              onSave();
-            }
-          }}
-          className="min-h-0 flex-1 resize-none bg-maestro-bg px-4 py-3 font-mono text-sm text-maestro-text outline-none"
-          spellCheck={false}
-        />
+        <div className="min-h-0 flex-1 overflow-auto">
+          <CodeMirror
+            ref={cmRef}
+            value={content}
+            onChange={(val) => onChange(val)}
+            theme={oneDark}
+            basicSetup={{
+              lineNumbers: true,
+              foldGutter: true,
+              bracketMatching: true,
+              highlightActiveLine: true,
+            }}
+            extensions={[saveKeymap()]}
+            height="100%"
+            style={{ height: "100%" }}
+          />
+        </div>
       </div>
     </div>
   );
