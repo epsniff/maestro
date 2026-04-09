@@ -30,11 +30,11 @@
     {
       "id": "file-dragdrop",
       "name": "Expand file drag/drop to all file types in terminals",
-      "status": "pending",
+      "status": "done",
       "instruction_file": "loop-builder-upstream-sync/instructions/scope-file-dragdrop.md",
       "type": "upstream-port",
-      "approach": null,
-      "notes": null
+      "approach": "reimplementation",
+      "notes": "Removed IMAGE_EXTENSIONS filter, accept all file drops. Added quote wrapping for paths with spaces."
     },
     {
       "id": "stale-sessions",
@@ -73,8 +73,8 @@
       "notes": null
     }
   ],
-  "completed": ["upstream-216", "upstream-217", "upstream-220"],
-  "iteration": 3,
+  "completed": ["upstream-216", "upstream-217", "upstream-220", "file-dragdrop"],
+  "iteration": 4,
   "pivot_count": 0,
   "max_pivots": 3
 }
