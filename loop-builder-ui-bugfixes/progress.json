@@ -1,14 +1,15 @@
 {
   "name": "ui-bugfixes",
   "started": "2026-04-11T06:56:06Z",
-  "lastUpdated": "2026-04-11T14:05:00Z",
-  "iterations": 4,
+  "lastUpdated": "2026-04-11T14:42:00Z",
+  "iterations": 5,
   "inProgress": null,
   "completed": [
     "BUG-01",
     "BUG-02",
     "BUG-03",
-    "BUG-04"
+    "BUG-04",
+    "BUG-05"
   ],
   "items": [
     {
@@ -38,7 +39,7 @@
     {
       "id": "BUG-05",
       "name": "Fix file deletion ignoring confirmation dialog",
-      "status": "pending",
+      "status": "complete",
       "description": "Right-click 'Delete file' deletes the file immediately regardless of whether OK or Cancel is pressed in the confirmation popup. File should only be deleted when OK is pressed; Cancel should be a no-op."
     },
     {
