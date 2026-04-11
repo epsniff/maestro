@@ -9,7 +9,7 @@ import {
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTodoStore } from "@/stores/useTodoStore";
 import { TodoItemRow } from "./TodoItemRow";
 
@@ -74,12 +74,25 @@ export function TodoPanel({ projectPath }: TodoPanelProps) {
     [uncheckedIds, projectPath, reorderTodos],
   );
 
+  const [inlineText, setInlineText] = useState("");
+  const inlineInputRef = useRef<HTMLInputElement>(null);
+
   const handleAdd = useCallback(async () => {
     const item = await addTodo(projectPath, "");
     newItemIdRef.current = item.id;
     // Refetch to get sorted list
     fetchTodos(projectPath);
   }, [projectPath, addTodo, fetchTodos]);
+
+  const handleInlineAdd = useCallback(async () => {
+    const trimmed = inlineText.trim();
+    if (!trimmed) return;
+    setInlineText("");
+    await addTodo(projectPath, trimmed);
+    fetchTodos(projectPath);
+    // Re-focus the input for rapid entry
+    inlineInputRef.current?.focus();
+  }, [inlineText, projectPath, addTodo, fetchTodos]);
 
   if (isLoading && items.length === 0) {
     return (
@@ -109,15 +122,27 @@ export function TodoPanel({ projectPath }: TodoPanelProps) {
       {/* List */}
       <div className="flex-1 overflow-y-auto px-1 py-1">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-8">
-            <span className="text-xs text-maestro-muted/60">No to-do items yet</span>
-            <button
-              type="button"
-              onClick={handleAdd}
-              className="text-xs text-maestro-accent hover:underline"
-            >
-              Add one
-            </button>
+          <div className="flex flex-col gap-2 py-4">
+            <div className="flex items-center justify-center py-4">
+              <span className="text-xs text-maestro-muted/60">No to-do items yet</span>
+            </div>
+            <div className="flex items-center gap-1.5 rounded px-1.5 py-1">
+              <Plus size={14} className="flex-shrink-0 text-maestro-muted/40" />
+              <input
+                ref={inlineInputRef}
+                type="text"
+                value={inlineText}
+                onChange={(e) => setInlineText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleInlineAdd();
+                  }
+                }}
+                placeholder="Add a to-do item..."
+                className="min-h-[20px] flex-1 bg-transparent text-xs leading-5 text-maestro-text outline-none placeholder:text-maestro-muted/40"
+              />
+            </div>
           </div>
         ) : (
           <>
@@ -140,6 +165,25 @@ export function TodoPanel({ projectPath }: TodoPanelProps) {
                 ))}
               </SortableContext>
             </DndContext>
+
+            {/* Inline add input — always visible below unchecked items */}
+            <div className="flex items-center gap-1.5 rounded px-1.5 py-1">
+              <Plus size={14} className="flex-shrink-0 text-maestro-muted/40" />
+              <input
+                ref={inlineInputRef}
+                type="text"
+                value={inlineText}
+                onChange={(e) => setInlineText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleInlineAdd();
+                  }
+                }}
+                placeholder="Add a to-do item..."
+                className="min-h-[20px] flex-1 bg-transparent text-xs leading-5 text-maestro-text outline-none placeholder:text-maestro-muted/40"
+              />
+            </div>
 
             {/* Divider between unchecked and checked */}
             {checked.length > 0 && unchecked.length > 0 && (
