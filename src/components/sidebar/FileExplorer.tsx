@@ -1,12 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import {
   ChevronDown,
   ChevronRight,
   Copy,
+  ExternalLink,
   Eye,
   EyeOff,
-  ExternalLink,
   File,
   FilePlus,
   FileText,
@@ -42,9 +43,18 @@ interface ContextMenuState {
 
 /** Names hidden by default (must match backend HIDDEN_NAMES for dimming). */
 const HIDDEN_NAMES = new Set([
-  "node_modules", ".git", "target", "dist", "build",
-  "__pycache__", ".venv", "venv", ".cargo", ".next",
-  ".DS_Store", "Thumbs.db",
+  "node_modules",
+  ".git",
+  "target",
+  "dist",
+  "build",
+  "__pycache__",
+  ".venv",
+  "venv",
+  ".cargo",
+  ".next",
+  ".DS_Store",
+  "Thumbs.db",
 ]);
 
 function isHiddenEntry(name: string): boolean {
@@ -296,7 +306,9 @@ export function FileExplorer() {
 
   const refreshRoot = useCallback(() => {
     if (!projectPath) return;
-    listDirectory(projectPath, showHidden).then(setEntries).catch(() => {});
+    listDirectory(projectPath, showHidden)
+      .then(setEntries)
+      .catch(() => {});
   }, [projectPath, showHidden]);
 
   // Focus the new file input when it appears
@@ -313,16 +325,13 @@ export function FileExplorer() {
     }
   }, [newFolderDir]);
 
-  const handleNewFile = useCallback(
-    (ctxPath: string, isDir: boolean) => {
-      const dir = isDir ? ctxPath : ctxPath.substring(0, ctxPath.lastIndexOf("/"));
-      setNewFileDir(dir);
-      setNewFileName("");
-      setNewFileError(null);
-      setCtxMenu(null);
-    },
-    [],
-  );
+  const handleNewFile = useCallback((ctxPath: string, isDir: boolean) => {
+    const dir = isDir ? ctxPath : ctxPath.substring(0, ctxPath.lastIndexOf("/"));
+    setNewFileDir(dir);
+    setNewFileName("");
+    setNewFileError(null);
+    setCtxMenu(null);
+  }, []);
 
   const submitNewFile = useCallback(async () => {
     if (!newFileDir || !newFileName.trim()) return;
@@ -344,16 +353,13 @@ export function FileExplorer() {
     setNewFileError(null);
   }, []);
 
-  const handleNewFolder = useCallback(
-    (ctxPath: string, isDir: boolean) => {
-      const dir = isDir ? ctxPath : ctxPath.substring(0, ctxPath.lastIndexOf("/"));
-      setNewFolderDir(dir);
-      setNewFolderName("");
-      setNewFolderError(null);
-      setCtxMenu(null);
-    },
-    [],
-  );
+  const handleNewFolder = useCallback((ctxPath: string, isDir: boolean) => {
+    const dir = isDir ? ctxPath : ctxPath.substring(0, ctxPath.lastIndexOf("/"));
+    setNewFolderDir(dir);
+    setNewFolderName("");
+    setNewFolderError(null);
+    setCtxMenu(null);
+  }, []);
 
   const submitNewFolder = useCallback(async () => {
     if (!newFolderDir || !newFolderName.trim()) return;
@@ -400,32 +406,26 @@ export function FileExplorer() {
     async (path: string, isDir: boolean) => {
       const name = path.split("/").pop() ?? path;
       const kind = isDir ? "folder" : "file";
-      const confirmed = window.confirm(
-        `Delete ${kind} "${name}"? This cannot be undone.`,
-      );
-      if (!confirmed) {
-        setCtxMenu(null);
-        return;
-      }
+      setCtxMenu(null);
+      const confirmed = await ask(`Delete ${kind} "${name}"? This cannot be undone.`, {
+        title: "Confirm Delete",
+        kind: "warning",
+      });
+      if (!confirmed) return;
       try {
         await invoke("delete_path", { path, projectRoot: projectPath });
-        setCtxMenu(null);
         refreshRoot();
       } catch (e) {
         console.error("Failed to delete:", e);
-        setCtxMenu(null);
       }
     },
     [projectPath, refreshRoot],
   );
 
-  const handleStartRename = useCallback(
-    (path: string) => {
-      setRenamingPath(path);
-      setCtxMenu(null);
-    },
-    [],
-  );
+  const handleStartRename = useCallback((path: string) => {
+    setRenamingPath(path);
+    setCtxMenu(null);
+  }, []);
 
   const handleRenameSubmit = useCallback(
     async (oldPath: string, newName: string) => {
@@ -627,9 +627,7 @@ export function FileExplorer() {
               placeholder="filename.ext"
               className="w-full rounded border border-maestro-border bg-maestro-bg px-2 py-1 text-xs text-maestro-text outline-none focus:border-maestro-accent"
             />
-            {newFileError && (
-              <div className="mt-1 text-xs text-red-400">{newFileError}</div>
-            )}
+            {newFileError && <div className="mt-1 text-xs text-red-400">{newFileError}</div>}
             <div className="mt-2 flex justify-end gap-2">
               <button
                 type="button"
@@ -678,9 +676,7 @@ export function FileExplorer() {
               placeholder="folder-name"
               className="w-full rounded border border-maestro-border bg-maestro-bg px-2 py-1 text-xs text-maestro-text outline-none focus:border-maestro-accent"
             />
-            {newFolderError && (
-              <div className="mt-1 text-xs text-red-400">{newFolderError}</div>
-            )}
+            {newFolderError && <div className="mt-1 text-xs text-red-400">{newFolderError}</div>}
             <div className="mt-2 flex justify-end gap-2">
               <button
                 type="button"

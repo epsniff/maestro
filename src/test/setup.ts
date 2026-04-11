@@ -9,6 +9,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 // Mock @tauri-apps/plugin-dialog
 vi.mock("@tauri-apps/plugin-dialog", () => ({
   open: vi.fn(),
+  ask: vi.fn().mockResolvedValue(false),
 }));
 
 // Mock tauri-plugin-macos-permissions-api
