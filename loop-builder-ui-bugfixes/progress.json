@@ -1,15 +1,16 @@
 {
   "name": "ui-bugfixes",
   "started": "2026-04-11T06:56:06Z",
-  "lastUpdated": "2026-04-11T14:42:00Z",
-  "iterations": 5,
+  "lastUpdated": "2026-04-11T16:45:00Z",
+  "iterations": 6,
   "inProgress": null,
   "completed": [
     "BUG-01",
     "BUG-02",
     "BUG-03",
     "BUG-04",
-    "BUG-05"
+    "BUG-05",
+    "BUG-06"
   ],
   "items": [
     {
@@ -45,7 +46,7 @@
     {
       "id": "BUG-06",
       "name": "Add drag-and-drop file moving into subfolders",
-      "status": "pending",
+      "status": "complete",
       "description": "Allow dragging files in the file tab to move them into subfolders. If a file is dragged but not dropped onto a subfolder, it should be a no-op and not change the file order."
     },
     {
