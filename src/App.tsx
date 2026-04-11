@@ -10,9 +10,7 @@ import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { useTerminalSettingsStore } from "./stores/useTerminalSettingsStore";
 import { useAppKeyboard } from "./hooks/useAppKeyboard";
 import { useSwipeNavigation } from "./hooks/useSwipeNavigation";
-import { useUpdateStore } from "./stores/useUpdateStore";
 import { initActivityListener, stopActivityListener } from "./stores/useActivityStore";
-import { UpdateNotification } from "./components/update/UpdateNotification";
 import { BottomBar } from "./components/shared/BottomBar";
 import { FDADialog } from "./components/shared/FDADialog";
 import { MultiProjectView, type MultiProjectViewHandle } from "./components/shared/MultiProjectView";
@@ -127,22 +125,6 @@ function App() {
     });
   }, [initializeTerminalSettings]);
 
-  // Initialize update event listeners and auto-check
-  const initUpdateListeners = useUpdateStore((s) => s.initListeners);
-  const checkForUpdates = useUpdateStore((s) => s.checkForUpdates);
-  const autoCheckEnabled = useUpdateStore((s) => s.autoCheckEnabled);
-  const checkIntervalMinutes = useUpdateStore((s) => s.checkIntervalMinutes);
-
-  useEffect(() => {
-    const unlistenPromise = initUpdateListeners().catch((err) => {
-      console.error("Failed to initialize update listeners:", err);
-      return () => {};
-    });
-    return () => {
-      unlistenPromise.then((unlisten) => unlisten());
-    };
-  }, [initUpdateListeners]);
-
   // Initialize activity event listener (claude-event from transcript watcher)
   useEffect(() => {
     initActivityListener().catch((err) => {
@@ -152,15 +134,6 @@ function App() {
       stopActivityListener();
     };
   }, []);
-
-  useEffect(() => {
-    if (!autoCheckEnabled) return;
-    // Check on mount
-    checkForUpdates();
-    // Then periodically
-    const interval = setInterval(checkForUpdates, checkIntervalMinutes * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [autoCheckEnabled, checkIntervalMinutes, checkForUpdates]);
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
   const macTitleBarPadding = useMacTitleBarPadding();
@@ -592,7 +565,6 @@ function App() {
         />
       )}
 
-      <UpdateNotification />
     </div>
   );
 }
