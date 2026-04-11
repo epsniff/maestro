@@ -1762,15 +1762,15 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
       enabledSkills: [],
       enabledPlugins: [],
     };
+    const updatedSlots = [...slotsRef.current, newSlot];
     setSlots((prev) => [...prev, newSlot]);
+    // Sync slotsRef immediately so launchSlot can find the new slot
+    // (the useEffect-based sync fires after render, which is too late).
+    slotsRef.current = updatedSlots;
     setLayoutTree(() => buildGridTree([...orderedSlotIds, newSlot.id]));
     setFocusedSlotId(newSlot.id);
 
-    // Launch on the next tick so slotsRef sees the new slot.
-    const slotId = newSlot.id;
-    queueMicrotask(() => {
-      void launchSlot(slotId);
-    });
+    void launchSlot(newSlot.id);
 
     clearPendingFileOpen();
   }, [pendingFileOpen, clearPendingFileOpen, projectPath, launchSlot, orderedSlotIds]);
@@ -1991,7 +1991,7 @@ export const TerminalGrid = forwardRef<TerminalGridHandle, TerminalGridProps>(fu
 
           return (
             <div className="flex h-8 shrink-0 items-center gap-2 border-b border-maestro-border bg-maestro-surface px-3">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-maestro-muted">
+              <span className="w-[300px] shrink-0 truncate text-[11px] font-medium uppercase tracking-wider text-maestro-muted">
                 {getSlotLabel(zoomedOrderedSlots[zoomedIndex], zoomedIndex)} — {zoomedIndex + 1}/
                 {zoomedOrderedSlots.length}
               </span>
