@@ -1,13 +1,14 @@
 {
   "name": "ui-bugfixes",
   "started": "2026-04-11T06:56:06Z",
-  "lastUpdated": "2026-04-11T07:27:00Z",
-  "iterations": 3,
+  "lastUpdated": "2026-04-11T14:05:00Z",
+  "iterations": 4,
   "inProgress": null,
   "completed": [
     "BUG-01",
     "BUG-02",
-    "BUG-03"
+    "BUG-03",
+    "BUG-04"
   ],
   "items": [
     {
@@ -31,7 +32,7 @@
     {
       "id": "BUG-04",
       "name": "Add Codex Usage tracking to Status tab",
-      "status": "pending",
+      "status": "complete",
       "description": "Add a Codex Usage tracking section to the Status tab in the right pane, styled identically to the Claude Usage tracker."
     },
     {
