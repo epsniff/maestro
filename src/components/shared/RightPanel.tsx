@@ -10,7 +10,7 @@ import {
   RefreshCw,
   Terminal,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useUsageStore } from "@/stores/useUsageStore";
 import { formatResetTime } from "@/lib/usageParser";
 import type { GraphNode } from "@/lib/graphLayout";
@@ -475,6 +475,12 @@ function StatusTab({
 
 function UsageCard({ isVisible }: { isVisible: boolean }) {
   const { usage, isLoading, needsAuth, fetchUsage, startPolling } = useUsageStore();
+  const sessions = useSessionStore((s) => s.sessions);
+
+  // Check if there are any active Claude sessions
+  const hasActiveClaude = sessions.some(
+    (s) => s.mode === "Claude" && !["Done", "Error", "Disconnected"].includes(s.status)
+  );
 
   // Only poll when the Status tab is visible and the panel is not collapsed
   useEffect(() => {
@@ -482,6 +488,16 @@ function UsageCard({ isVisible }: { isVisible: boolean }) {
     const cleanup = startPolling();
     return cleanup;
   }, [isVisible, startPolling]);
+
+  // When a Claude session appears while needsAuth is true, re-fetch immediately —
+  // the new session implies credentials should now be available.
+  const prevHadClaude = useRef(false);
+  useEffect(() => {
+    if (hasActiveClaude && !prevHadClaude.current && isVisible && needsAuth) {
+      fetchUsage();
+    }
+    prevHadClaude.current = hasActiveClaude;
+  }, [hasActiveClaude, isVisible, needsAuth, fetchUsage]);
 
   const sessionPercent = usage?.sessionPercent ?? 0;
   const weeklyPercent = usage?.weeklyPercent ?? 0;
@@ -506,7 +522,16 @@ function UsageCard({ isVisible }: { isVisible: boolean }) {
 
       {needsAuth ? (
         <div className="text-[10px] text-maestro-muted">
-          Run <code className="rounded bg-maestro-border/50 px-1 py-0.5 font-mono">claude</code> to activate usage tracking
+          {hasActiveClaude ? (
+            <span className="flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Connecting to usage data…
+            </span>
+          ) : (
+            <>
+              Run <code className="rounded bg-maestro-border/50 px-1 py-0.5 font-mono">claude</code> to activate usage tracking
+            </>
+          )}
         </div>
       ) : (
         <>

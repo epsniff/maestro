@@ -4,12 +4,15 @@
 //! Reads OAuth tokens from platform credential store (primary) or credentials file (fallback).
 
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::Instant;
 
-/// Flag to skip credential store after first failure (prevents repeated prompts).
-static CREDENTIAL_STORE_FAILED: AtomicBool = AtomicBool::new(false);
+/// Tracks when the credential store last failed.
+/// Resets after CRED_STORE_RETRY_SECS so we retry once the user has authenticated.
+static CREDENTIAL_STORE_LAST_FAIL: Mutex<Option<Instant>> = Mutex::new(None);
+
+/// How long (seconds) to skip credential store after a failure before retrying.
+const CRED_STORE_RETRY_SECS: u64 = 120;
 
 /// Minimum seconds between actual API calls. Requests within this window return cached data.
 const CACHE_TTL_SECS: u64 = 30;
@@ -173,10 +176,20 @@ async fn read_file_credentials() -> Result<CredentialsData, String> {
 
 /// Get a valid access token, trying platform credential store first then file.
 async fn get_access_token() -> Result<String, String> {
-    // Try platform credential store first (skip if previously failed to avoid repeated prompts)
-    if !CREDENTIAL_STORE_FAILED.load(Ordering::Relaxed) {
+    // Try platform credential store first (skip temporarily after failure to avoid repeated prompts)
+    let skip_cred_store = CREDENTIAL_STORE_LAST_FAIL
+        .lock()
+        .ok()
+        .and_then(|g| g.as_ref().map(|t| t.elapsed().as_secs() < CRED_STORE_RETRY_SECS))
+        .unwrap_or(false);
+
+    if !skip_cred_store {
         match read_keychain_credentials().await {
             Ok(creds) => {
+                // Clear any previous failure since the store is accessible now
+                if let Ok(mut guard) = CREDENTIAL_STORE_LAST_FAIL.lock() {
+                    *guard = None;
+                }
                 if let Some(oauth) = creds.claude_ai_oauth {
                     if !is_token_expired(oauth.expires_at) {
                         log::debug!("Using token from platform credential store");
@@ -187,7 +200,9 @@ async fn get_access_token() -> Result<String, String> {
             }
             Err(e) => {
                 log::debug!("Credential store failed, will use file fallback: {}", e);
-                CREDENTIAL_STORE_FAILED.store(true, Ordering::Relaxed);
+                if let Ok(mut guard) = CREDENTIAL_STORE_LAST_FAIL.lock() {
+                    *guard = Some(Instant::now());
+                }
             }
         }
     }
