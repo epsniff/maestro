@@ -1,12 +1,13 @@
 {
   "name": "ui-bugfixes",
   "started": "2026-04-11T06:56:06Z",
-  "lastUpdated": "2026-04-11T07:10:00Z",
-  "iterations": 2,
+  "lastUpdated": "2026-04-11T07:27:00Z",
+  "iterations": 3,
   "inProgress": null,
   "completed": [
     "BUG-01",
-    "BUG-02"
+    "BUG-02",
+    "BUG-03"
   ],
   "items": [
     {
@@ -24,7 +25,7 @@
     {
       "id": "BUG-03",
       "name": "Fix Claude Usage tracking not starting automatically",
-      "status": "pending",
+      "status": "complete",
       "description": "In the Status tab, Claude Usage gets stuck showing 'Run claude to activate usage tracking'. It should start tracking anytime there is a claude session and the tab is active."
     },
     {
