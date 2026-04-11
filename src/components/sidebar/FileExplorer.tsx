@@ -88,6 +88,9 @@ function FileTreeNode({
   onRenameSubmit,
   onRenameCancel,
   showHidden,
+  onDragStart,
+  onDrop,
+  dropTargetPath,
 }: {
   entry: DirEntry;
   parentPath: string;
@@ -98,6 +101,9 @@ function FileTreeNode({
   onRenameSubmit: (oldPath: string, newName: string) => void;
   onRenameCancel: () => void;
   showHidden: boolean;
+  onDragStart: (path: string) => void;
+  onDrop: (targetFolderPath: string) => void;
+  dropTargetPath: string | null;
 }) {
   const fullPath = `${parentPath}/${entry.name}`;
   const isRenaming = renamingPath === fullPath;
@@ -171,10 +177,30 @@ function FileTreeNode({
     <div>
       <button
         type="button"
+        draggable={!isRenaming}
+        data-folder-path={entry.isDir ? fullPath : undefined}
         onClick={entry.isDir ? toggleExpand : undefined}
         onDoubleClick={handleDoubleClick}
         onContextMenu={handleCtxMenu}
-        className={`flex w-full items-center gap-1 rounded px-1 py-0.5 text-left text-xs hover:bg-maestro-border/30${hidden ? " opacity-50" : ""}`}
+        onDragStart={(e) => {
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", fullPath);
+          onDragStart(fullPath);
+        }}
+        onDragOver={(e) => {
+          if (entry.isDir) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (entry.isDir) {
+            onDrop(fullPath);
+          }
+        }}
+        className={`flex w-full items-center gap-1 rounded px-1 py-0.5 text-left text-xs hover:bg-maestro-border/30${hidden ? " opacity-50" : ""}${dropTargetPath === fullPath ? " bg-maestro-accent/20 ring-1 ring-maestro-accent/50" : ""}`}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
       >
         {entry.isDir ? (
@@ -249,6 +275,9 @@ function FileTreeNode({
               onRenameSubmit={onRenameSubmit}
               onRenameCancel={onRenameCancel}
               showHidden={showHidden}
+              onDragStart={onDragStart}
+              onDrop={onDrop}
+              dropTargetPath={dropTargetPath}
             />
           ))}
         </div>
@@ -278,6 +307,8 @@ export function FileExplorer() {
   const [newFolderError, setNewFolderError] = useState<string | null>(null);
   const newFolderInputRef = useRef<HTMLInputElement>(null);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
+  const [draggedPath, setDraggedPath] = useState<string | null>(null);
+  const [dropTargetPath, setDropTargetPath] = useState<string | null>(null);
 
   // Load root directory
   useEffect(() => {
@@ -459,6 +490,53 @@ export function FileExplorer() {
     setRenamingPath(null);
   }, []);
 
+  const handleDragStart = useCallback((path: string) => {
+    setDraggedPath(path);
+  }, []);
+
+  const handleDrop = useCallback(
+    async (targetFolderPath: string) => {
+      setDropTargetPath(null);
+      if (!draggedPath || !projectPath) {
+        setDraggedPath(null);
+        return;
+      }
+      const fileName = draggedPath.split("/").pop() ?? "";
+      const sourcePar = draggedPath.substring(0, draggedPath.lastIndexOf("/"));
+      // No-op if dropping into the same folder or onto itself
+      if (sourcePar === targetFolderPath || draggedPath === targetFolderPath) {
+        setDraggedPath(null);
+        return;
+      }
+      // Don't allow dropping a folder into itself or its own subtree
+      if (targetFolderPath.startsWith(`${draggedPath}/`)) {
+        setDraggedPath(null);
+        return;
+      }
+      const newPath = `${targetFolderPath}/${fileName}`;
+      try {
+        await invoke("rename_path", {
+          oldPath: draggedPath,
+          newPath,
+          projectRoot: projectPath,
+        });
+        // Update open file sessions that reference the old path
+        const allSessions = useSessionStore.getState().sessions;
+        for (const s of allSessions) {
+          if (s.kind === "OpenFile" && s.file_path?.startsWith(draggedPath)) {
+            const updated = s.file_path.replace(draggedPath, newPath);
+            useSessionStore.getState().updateSession(s.id, { file_path: updated });
+          }
+        }
+        refreshRoot();
+      } catch (e) {
+        console.error("Failed to move:", e);
+      }
+      setDraggedPath(null);
+    },
+    [draggedPath, projectPath, refreshRoot],
+  );
+
   const handleContextMenu = useCallback((e: React.MouseEvent, path: string, isDir: boolean) => {
     e.preventDefault();
     setCtxMenu({ x: e.clientX, y: e.clientY, path, isDir });
@@ -476,7 +554,36 @@ export function FileExplorer() {
   }
 
   return (
-    <div className="space-y-1">
+    <div
+      role="tree"
+      className="space-y-1"
+      onDragOver={(e) => {
+        // Check if dragOver target is a folder button — if not, clear highlight
+        const target = e.target as HTMLElement;
+        const btn = target.closest("button[draggable]");
+        if (!btn) setDropTargetPath(null);
+      }}
+      onDragEnter={(e) => {
+        // Track which folder is being hovered via data attribute
+        const target = e.target as HTMLElement;
+        const btn = target.closest("button[draggable]");
+        if (btn) {
+          const path = btn.getAttribute("data-folder-path");
+          if (path) setDropTargetPath(path);
+          else setDropTargetPath(null);
+        }
+      }}
+      onDragEnd={() => {
+        setDraggedPath(null);
+        setDropTargetPath(null);
+      }}
+      onDrop={(e) => {
+        // If dropped on the container (not a folder), it's a no-op
+        e.preventDefault();
+        setDraggedPath(null);
+        setDropTargetPath(null);
+      }}
+    >
       <div className="flex items-center justify-end px-2">
         <button
           type="button"
@@ -508,6 +615,9 @@ export function FileExplorer() {
             onRenameSubmit={handleRenameSubmit}
             onRenameCancel={handleRenameCancel}
             showHidden={showHidden}
+            onDragStart={handleDragStart}
+            onDrop={handleDrop}
+            dropTargetPath={dropTargetPath}
           />
         ))
       )}
