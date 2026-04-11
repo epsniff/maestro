@@ -384,11 +384,16 @@ export function FileExplorer() {
         useSessionStore.getState().setFocusedSessionId(existing.id);
         return;
       }
+      // Ensure TerminalGrid is mounted — it only renders when sessionsLaunched is true.
+      // Without this, the pendingFileOpen signal has no consumer.
+      if (activeTab && !activeTab.sessionsLaunched) {
+        useWorkspaceStore.getState().setSessionsLaunched(activeTab.id, true);
+      }
       // Signal TerminalGrid (via the session store) to create a new OpenFile slot
       // and launch it. TerminalGrid watches `pendingFileOpen` in a useEffect.
       useSessionStore.getState().setPendingFileOpen({ projectPath, filePath: path });
     },
-    [projectPath, sessions],
+    [projectPath, sessions, activeTab],
   );
 
   const handleDelete = useCallback(
