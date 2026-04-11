@@ -3,6 +3,7 @@ import {
   AlertCircle,
   BarChart3,
   ChevronDown,
+  Code2,
   GitBranch,
   GitFork,
   ListTodo,
@@ -11,22 +12,23 @@ import {
   Terminal,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useUsageStore } from "@/stores/useUsageStore";
-import { formatResetTime } from "@/lib/usageParser";
 import type { GraphNode } from "@/lib/graphLayout";
-import { useGitStore } from "@/stores/useGitStore";
+import { formatResetTime } from "@/lib/usageParser";
+import { useCodexUsageStore } from "@/stores/useCodexUsageStore";
 import { useGitHubStore } from "@/stores/useGitHubStore";
+import { useGitStore } from "@/stores/useGitStore";
 import { useSessionStore } from "@/stores/useSessionStore";
+import { useUsageStore } from "@/stores/useUsageStore";
+import { CommitDetailPanel } from "../git/CommitDetailPanel";
+import { DiscussionDetailPanel } from "../git/discussions/DiscussionDetailPanel";
+import { GitPanelContent } from "../git/GitPanelContent";
+import { type GitPanelTab, GitPanelTabs } from "../git/GitPanelTabs";
+import { IssueDetailPanel } from "../git/issues/IssueDetailPanel";
+import { PullRequestDetailPanel } from "../git/pulls/PullRequestDetailPanel";
+import { TodoPanel } from "../todo/TodoPanel";
 import { BranchDropdown } from "./BranchDropdown";
 import { StatusLegend } from "./StatusLegend";
 import { WorktreeCard } from "./WorktreeCard";
-import { GitPanelTabs, type GitPanelTab } from "../git/GitPanelTabs";
-import { GitPanelContent } from "../git/GitPanelContent";
-import { CommitDetailPanel } from "../git/CommitDetailPanel";
-import { PullRequestDetailPanel } from "../git/pulls/PullRequestDetailPanel";
-import { IssueDetailPanel } from "../git/issues/IssueDetailPanel";
-import { DiscussionDetailPanel } from "../git/discussions/DiscussionDetailPanel";
-import { TodoPanel } from "../todo/TodoPanel";
 
 type RightPanelTab = "status" | "git" | "todo";
 
@@ -90,13 +92,13 @@ export function RightPanel({
         return;
       }
 
-      const activeSessions = useSessionStore.getState().sessions.filter(
-        (s) => s.project_path === repoPath && !s.worktree_path
-      );
+      const activeSessions = useSessionStore
+        .getState()
+        .sessions.filter((s) => s.project_path === repoPath && !s.worktree_path);
       if (activeSessions.length > 0) {
         const proceed = window.confirm(
           `Switching branches will affect ${activeSessions.length} active session(s) ` +
-          `that share the main repository checkout.\n\nContinue?`
+            `that share the main repository checkout.\n\nContinue?`,
         );
         if (!proceed) {
           setBranchDropdownOpen(false);
@@ -117,7 +119,7 @@ export function RightPanel({
         setIsSwitching(false);
       }
     },
-    [repoPath, branchName, checkoutBranch, fetchCurrentBranch, onBranchChanged]
+    [repoPath, branchName, checkoutBranch, fetchCurrentBranch, onBranchChanged],
   );
 
   const handleCreateBranch = useCallback(
@@ -128,7 +130,7 @@ export function RightPanel({
         await handleBranchSelect(name);
       }
     },
-    [repoPath, createBranch, handleBranchSelect]
+    [repoPath, createBranch, handleBranchSelect],
   );
 
   // ── Git panel logic (from GitGraphPanel) ──
@@ -151,7 +153,7 @@ export function RightPanel({
       setSelectedPRNumber(prNumber);
       await fetchPullRequestDetail(repoPath, prNumber);
     },
-    [repoPath, fetchPullRequestDetail]
+    [repoPath, fetchPullRequestDetail],
   );
 
   const handleClosePRDetail = useCallback(() => {
@@ -165,7 +167,7 @@ export function RightPanel({
       setSelectedIssueNumber(issueNumber);
       await fetchIssueDetail(repoPath, issueNumber);
     },
-    [repoPath, fetchIssueDetail]
+    [repoPath, fetchIssueDetail],
   );
 
   const handleCloseIssueDetail = useCallback(() => {
@@ -179,7 +181,7 @@ export function RightPanel({
       setSelectedDiscussionNumber(discussionNumber);
       await fetchDiscussionDetail(repoPath, discussionNumber);
     },
-    [repoPath, fetchDiscussionDetail]
+    [repoPath, fetchDiscussionDetail],
   );
 
   const handleCloseDiscussionDetail = useCallback(() => {
@@ -187,16 +189,19 @@ export function RightPanel({
     clearSelectedDiscussion();
   }, [clearSelectedDiscussion]);
 
-  const handleGitTabChange = useCallback((tab: GitPanelTab) => {
-    setActiveGitTab(tab);
-    setSelectedNode(null);
-    setSelectedPRNumber(null);
-    setSelectedIssueNumber(null);
-    setSelectedDiscussionNumber(null);
-    clearSelectedPR();
-    clearSelectedIssue();
-    clearSelectedDiscussion();
-  }, [clearSelectedPR, clearSelectedIssue, clearSelectedDiscussion]);
+  const handleGitTabChange = useCallback(
+    (tab: GitPanelTab) => {
+      setActiveGitTab(tab);
+      setSelectedNode(null);
+      setSelectedPRNumber(null);
+      setSelectedIssueNumber(null);
+      setSelectedDiscussionNumber(null);
+      clearSelectedPR();
+      clearSelectedIssue();
+      clearSelectedDiscussion();
+    },
+    [clearSelectedPR, clearSelectedIssue, clearSelectedDiscussion],
+  );
 
   const handleSelectCommit = useCallback((node: GraphNode) => {
     setSelectedNode(node);
@@ -218,7 +223,7 @@ export function RightPanel({
         window.alert(`Failed to create branch: ${err}`);
       }
     },
-    [repoPath, createBranch]
+    [repoPath, createBranch],
   );
 
   const handleCheckoutCommit = useCallback(
@@ -233,7 +238,7 @@ export function RightPanel({
         window.alert(`Failed to checkout: ${err}`);
       }
     },
-    [repoPath, checkoutBranch]
+    [repoPath, checkoutBranch],
   );
 
   const handleRefreshGit = useCallback(async () => {
@@ -252,12 +257,15 @@ export function RightPanel({
   const isGhError = prsError?.includes("gh") || prsError?.includes("GitHub CLI");
   const showPRDetail = selectedPRNumber && repoPath && activeGitTab === "prs";
   const showIssueDetail = selectedIssueNumber && repoPath && activeGitTab === "issues";
-  const showDiscussionDetail = selectedDiscussionNumber && repoPath && activeGitTab === "discussions";
+  const showDiscussionDetail =
+    selectedDiscussionNumber && repoPath && activeGitTab === "discussions";
 
   return (
     <aside
       className={`theme-transition no-select relative flex h-full w-full min-w-0 flex-col overflow-hidden border-l border-maestro-border bg-maestro-surface ${
-        collapsed ? "overflow-hidden border-l-0 opacity-0" : "opacity-100 transition-all duration-200 ease-out"
+        collapsed
+          ? "overflow-hidden border-l-0 opacity-0"
+          : "opacity-100 transition-all duration-200 ease-out"
       }`}
     >
       {/* Top-level tab switcher (Status / Git) */}
@@ -326,9 +334,7 @@ export function RightPanel({
           <TodoPanel projectPath={repoPath} />
         ) : (
           <div className="flex flex-1 items-center justify-center px-4 text-center">
-            <p className="text-xs text-maestro-muted/60">
-              Open a project to manage todos
-            </p>
+            <p className="text-xs text-maestro-muted/60">Open a project to manage todos</p>
           </div>
         )
       ) : (
@@ -364,7 +370,6 @@ export function RightPanel({
           checkAuth={checkAuth}
         />
       )}
-
     </aside>
   );
 }
@@ -455,6 +460,9 @@ function StatusTab({
       {/* Claude usage card */}
       <UsageCard isVisible={isVisible} />
 
+      {/* Codex usage card */}
+      <CodexUsageCard isVisible={isVisible} />
+
       {/* Status legend card */}
       <div className={cardClass}>
         <div className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-maestro-muted">
@@ -479,7 +487,7 @@ function UsageCard({ isVisible }: { isVisible: boolean }) {
 
   // Check if there are any active Claude sessions
   const hasActiveClaude = sessions.some(
-    (s) => s.mode === "Claude" && !["Done", "Error", "Disconnected"].includes(s.status)
+    (s) => s.mode === "Claude" && !["Done", "Error", "Disconnected"].includes(s.status),
   );
 
   // Only poll when the Status tab is visible and the panel is not collapsed
@@ -529,7 +537,8 @@ function UsageCard({ isVisible }: { isVisible: boolean }) {
             </span>
           ) : (
             <>
-              Run <code className="rounded bg-maestro-border/50 px-1 py-0.5 font-mono">claude</code> to activate usage tracking
+              Run <code className="rounded bg-maestro-border/50 px-1 py-0.5 font-mono">claude</code>{" "}
+              to activate usage tracking
             </>
           )}
         </div>
@@ -565,6 +574,112 @@ function UsageCard({ isVisible }: { isVisible: boolean }) {
             <div className="h-2 bg-maestro-border/60 rounded-full overflow-hidden">
               <div
                 className="h-full bg-maestro-green rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(100, weeklyPercent)}%` }}
+              />
+            </div>
+            {weeklyResetTime && (
+              <div className="text-[9px] text-maestro-muted mt-0.5">Resets {weeklyResetTime}</div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ================================================================ */
+/*  CODEX USAGE CARD                                                 */
+/* ================================================================ */
+
+function CodexUsageCard({ isVisible }: { isVisible: boolean }) {
+  const { usage, isLoading, needsAuth, fetchUsage, startPolling } = useCodexUsageStore();
+  const sessions = useSessionStore((s) => s.sessions);
+
+  const hasActiveCodex = sessions.some(
+    (s) => s.mode === "Codex" && !["Done", "Error", "Disconnected"].includes(s.status),
+  );
+
+  useEffect(() => {
+    if (!isVisible) return;
+    const cleanup = startPolling();
+    return cleanup;
+  }, [isVisible, startPolling]);
+
+  const prevHadCodex = useRef(false);
+  useEffect(() => {
+    if (hasActiveCodex && !prevHadCodex.current && isVisible && needsAuth) {
+      fetchUsage();
+    }
+    prevHadCodex.current = hasActiveCodex;
+  }, [hasActiveCodex, isVisible, needsAuth, fetchUsage]);
+
+  const sessionPercent = usage?.sessionPercent ?? 0;
+  const weeklyPercent = usage?.weeklyPercent ?? 0;
+  const sessionResetTime = formatResetTime(usage?.sessionResetsAt ?? null);
+  const weeklyResetTime = formatResetTime(usage?.weeklyResetsAt ?? null);
+
+  return (
+    <div className={cardClass}>
+      <div className="flex items-center gap-2 mb-2">
+        <Code2 className="h-4 w-4 text-green-400" />
+        <span className="text-xs font-semibold text-maestro-text">Codex Usage</span>
+        <button
+          type="button"
+          onClick={fetchUsage}
+          disabled={isLoading}
+          className="ml-auto rounded p-0.5 hover:bg-maestro-border/40"
+          title="Refresh usage"
+        >
+          <RefreshCw className={`h-3 w-3 text-maestro-muted ${isLoading ? "animate-spin" : ""}`} />
+        </button>
+      </div>
+
+      {needsAuth ? (
+        <div className="text-[10px] text-maestro-muted">
+          {hasActiveCodex ? (
+            <span className="flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Connecting to usage data…
+            </span>
+          ) : (
+            <>
+              Run <code className="rounded bg-maestro-border/50 px-1 py-0.5 font-mono">codex</code>{" "}
+              to activate usage tracking
+            </>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Daily usage bar */}
+          <div className="mb-2">
+            <div className="flex justify-between text-[10px] text-maestro-muted mb-1">
+              <span>Daily (5h)</span>
+              <span title={sessionResetTime ? `Resets ${sessionResetTime}` : undefined}>
+                {Math.round(sessionPercent)}%
+              </span>
+            </div>
+            <div className="h-2 bg-maestro-border/60 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-green-400 rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(100, sessionPercent)}%` }}
+              />
+            </div>
+            {sessionResetTime && (
+              <div className="text-[9px] text-maestro-muted mt-0.5">Resets {sessionResetTime}</div>
+            )}
+          </div>
+
+          {/* Weekly usage bar */}
+          <div>
+            <div className="flex justify-between text-[10px] text-maestro-muted mb-1">
+              <span>Weekly (7d)</span>
+              <span title={weeklyResetTime ? `Resets ${weeklyResetTime}` : undefined}>
+                {Math.round(weeklyPercent)}%
+              </span>
+            </div>
+            <div className="h-2 bg-maestro-border/60 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-green-600 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(100, weeklyPercent)}%` }}
               />
             </div>
@@ -724,7 +839,8 @@ function GitTab({
             <AlertCircle size={32} className="text-maestro-yellow/50" strokeWidth={1} />
             <p className="text-xs text-maestro-muted/60">Not authenticated with GitHub</p>
             <p className="text-[10px] text-maestro-muted/40">
-              Run <code className="rounded bg-maestro-card px-1 py-0.5">gh auth login</code> in your terminal
+              Run <code className="rounded bg-maestro-card px-1 py-0.5">gh auth login</code> in your
+              terminal
             </p>
             <button
               type="button"

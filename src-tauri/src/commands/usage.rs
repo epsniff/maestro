@@ -359,3 +359,164 @@ async fn fetch_usage_from_api() -> Result<UsageData, String> {
 
     Ok(usage)
 }
+
+/* ================================================================ */
+/*  CODEX USAGE                                                      */
+/* ================================================================ */
+
+/// Cached Codex usage response. Stores (fetch_time, ttl_secs, data).
+static CODEX_USAGE_CACHE: Mutex<Option<(Instant, u64, UsageData)>> = Mutex::new(None);
+
+/// Get an OpenAI API key for Codex usage tracking.
+///
+/// Checks (in order):
+/// 1. `OPENAI_API_KEY` environment variable
+/// 2. `~/.codex/config.toml` for `api_key` field
+/// 3. `~/.codex/auth.json` for OAuth access token
+async fn get_codex_api_key() -> Result<String, String> {
+    // 1. Environment variable
+    if let Ok(key) = std::env::var("OPENAI_API_KEY") {
+        if !key.is_empty() {
+            log::debug!("Using Codex API key from OPENAI_API_KEY env");
+            return Ok(key);
+        }
+    }
+
+    let home = directories::UserDirs::new()
+        .and_then(|dirs| Some(dirs.home_dir().to_path_buf()))
+        .ok_or("Could not get home directory")?;
+
+    // 2. ~/.codex/config.toml
+    let config_path = home.join(".codex").join("config.toml");
+    if config_path.exists() {
+        if let Ok(content) = tokio::fs::read_to_string(&config_path).await {
+            // Look for api_key in TOML (simple line-based parse)
+            for line in content.lines() {
+                let trimmed = line.trim();
+                if trimmed.starts_with("api_key") || trimmed.starts_with("openai_api_key") {
+                    if let Some(val) = trimmed.split('=').nth(1) {
+                        let key = val.trim().trim_matches('"').trim_matches('\'').to_string();
+                        if !key.is_empty() {
+                            log::debug!("Using Codex API key from config.toml");
+                            return Ok(key);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. ~/.codex/auth.json (OAuth tokens from ChatGPT login)
+    let auth_path = home.join(".codex").join("auth.json");
+    if auth_path.exists() {
+        if let Ok(content) = tokio::fs::read_to_string(&auth_path).await {
+            // Parse as JSON and look for access_token
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                if let Some(token) = json.get("access_token").and_then(|v| v.as_str()) {
+                    if !token.is_empty() {
+                        log::debug!("Using Codex token from auth.json");
+                        return Ok(token.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    Err("Not logged in to Codex".to_string())
+}
+
+/// Fetch Codex usage data.
+///
+/// Checks for OpenAI credentials and returns usage status.
+/// Since OpenAI does not expose a per-user usage percentage API like Anthropic,
+/// we validate credentials and return a connected state.
+#[tauri::command]
+pub async fn get_codex_usage() -> Result<UsageData, String> {
+    // Return cached response if still fresh
+    if let Ok(guard) = CODEX_USAGE_CACHE.lock() {
+        if let Some((fetched_at, ttl, ref data)) = *guard {
+            if fetched_at.elapsed().as_secs() < ttl {
+                return Ok(data.clone());
+            }
+        }
+    }
+
+    let result = fetch_codex_usage().await;
+
+    if let Ok(ref data) = result {
+        if let Ok(mut guard) = CODEX_USAGE_CACHE.lock() {
+            *guard = Some((Instant::now(), CACHE_TTL_SECS, data.clone()));
+        }
+    }
+
+    result
+}
+
+/// Actually check Codex credentials and return usage data.
+async fn fetch_codex_usage() -> Result<UsageData, String> {
+    let api_key = match get_codex_api_key().await {
+        Ok(k) => k,
+        Err(e) => {
+            log::debug!("No Codex credentials: {}", e);
+            return Ok(UsageData {
+                error_message: Some(e),
+                needs_auth: true,
+                ..Default::default()
+            });
+        }
+    };
+
+    // Validate the key by making a lightweight API call
+    let client = reqwest::Client::new();
+    let response = client
+        .get("https://api.openai.com/v1/models")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) => {
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED {
+                log::debug!("Codex API returned 401");
+                return Ok(UsageData {
+                    error_message: Some("Session expired".to_string()),
+                    needs_auth: true,
+                    ..Default::default()
+                });
+            }
+
+            if resp.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                let retry_after = resp
+                    .headers()
+                    .get("retry-after")
+                    .and_then(|v| v.to_str().ok())
+                    .and_then(|v| v.parse::<u64>().ok())
+                    .unwrap_or(60);
+                let data = UsageData {
+                    error_message: Some(format!("Rate limited, retrying in {}s", retry_after)),
+                    ..Default::default()
+                };
+                if let Ok(mut guard) = CODEX_USAGE_CACHE.lock() {
+                    *guard = Some((Instant::now(), retry_after, data.clone()));
+                }
+                return Ok(data);
+            }
+
+            // Connected successfully — OpenAI doesn't expose per-user usage percentages
+            // so we return 0% (no usage data available)
+            log::info!("Codex: authenticated successfully");
+            Ok(UsageData {
+                error_message: None,
+                needs_auth: false,
+                ..Default::default()
+            })
+        }
+        Err(e) => {
+            log::warn!("Codex API network error: {}", e);
+            Ok(UsageData {
+                error_message: Some(format!("Network error: {}", e)),
+                ..Default::default()
+            })
+        }
+    }
+}

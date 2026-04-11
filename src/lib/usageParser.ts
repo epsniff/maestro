@@ -25,15 +25,20 @@ export async function getClaudeUsage(): Promise<UsageData> {
   return invoke<UsageData>("get_claude_usage");
 }
 
+/** Fetch Codex usage from OpenAI via Tauri. */
+export async function getCodexUsage(): Promise<UsageData> {
+  return invoke<UsageData>("get_codex_usage");
+}
+
 /**
  * Tamagotchi mood based on usage level.
  * More usage = happier pet (like feeding a tamagotchi).
  */
 export type TamagotchiMood =
-  | "hungry"   // <20% - needs more usage!
-  | "bored"    // <40% - could use more activity
-  | "content"  // <60% - doing okay
-  | "happy"    // <80% - well fed
+  | "hungry" // <20% - needs more usage!
+  | "bored" // <40% - could use more activity
+  | "content" // <60% - doing okay
+  | "happy" // <80% - well fed
   | "ecstatic" // >=80% - thriving!
   | "sleeping"; // needs auth - dormant state
 
@@ -90,16 +95,12 @@ export function formatResetTime(isoDate: string | null): string {
 
     if (diffDays > 0) {
       const remainingHours = diffHours % 24;
-      return remainingHours > 0
-        ? `in ${diffDays}d ${remainingHours}h`
-        : `in ${diffDays}d`;
+      return remainingHours > 0 ? `in ${diffDays}d ${remainingHours}h` : `in ${diffDays}d`;
     }
 
     if (diffHours > 0) {
       const remainingMins = diffMins % 60;
-      return remainingMins > 0
-        ? `in ${diffHours}h ${remainingMins}m`
-        : `in ${diffHours}h`;
+      return remainingMins > 0 ? `in ${diffHours}h ${remainingMins}m` : `in ${diffHours}h`;
     }
 
     return `in ${diffMins}m`;
