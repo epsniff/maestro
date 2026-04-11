@@ -2,9 +2,12 @@
   "name": "ui-bugfixes",
   "started": "2026-04-11T06:56:06Z",
   "lastUpdated": "2026-04-11T07:10:00Z",
-  "iterations": 1,
+  "iterations": 2,
   "inProgress": null,
-  "completed": ["BUG-01"],
+  "completed": [
+    "BUG-01",
+    "BUG-02"
+  ],
   "items": [
     {
       "id": "BUG-01",
@@ -15,7 +18,7 @@
     {
       "id": "BUG-02",
       "name": "Add inline todo creation with '+' button",
-      "status": "pending",
+      "status": "complete",
       "description": "In the TODO tab in the right pane, add a '+ todo item' input that always appears below the unchecked todo items, allowing inline creation of new todo items."
     },
     {
