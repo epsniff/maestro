@@ -120,7 +120,7 @@ export function Sidebar({ collapsed, theme, onToggleTheme }: SidebarProps) {
         <button
           type="button"
           onClick={() => setActiveTab("files")}
-          className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold tracking-wide uppercase ${
+          className={`flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-[11px] font-semibold tracking-wide uppercase ${
             activeTab === "files"
               ? "border-b-2 border-maestro-accent text-maestro-accent"
               : "text-maestro-muted hover:text-maestro-text"
@@ -132,7 +132,7 @@ export function Sidebar({ collapsed, theme, onToggleTheme }: SidebarProps) {
         <button
           type="button"
           onClick={() => setActiveTab("config")}
-          className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold tracking-wide uppercase ${
+          className={`flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-[11px] font-semibold tracking-wide uppercase ${
             activeTab === "config"
               ? "border-b-2 border-maestro-accent text-maestro-accent"
               : "text-maestro-muted hover:text-maestro-text"
@@ -144,7 +144,7 @@ export function Sidebar({ collapsed, theme, onToggleTheme }: SidebarProps) {
         <button
           type="button"
           onClick={() => setActiveTab("processes")}
-          className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold tracking-wide uppercase ${
+          className={`flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-[11px] font-semibold tracking-wide uppercase ${
             activeTab === "processes"
               ? "border-b-2 border-maestro-accent text-maestro-accent"
               : "text-maestro-muted hover:text-maestro-text"
@@ -165,7 +165,6 @@ export function Sidebar({ collapsed, theme, onToggleTheme }: SidebarProps) {
           <ProcessesTab />
         )}
       </div>
-
     </aside>
   );
 }
