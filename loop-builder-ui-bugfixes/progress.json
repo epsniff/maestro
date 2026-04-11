@@ -1,8 +1,8 @@
 {
   "name": "ui-bugfixes",
   "started": "2026-04-11T06:56:06Z",
-  "lastUpdated": "2026-04-11T16:45:00Z",
-  "iterations": 6,
+  "lastUpdated": "2026-04-11T15:52:00Z",
+  "iterations": 2,
   "inProgress": null,
   "completed": [
     "BUG-01",
@@ -10,7 +10,8 @@
     "BUG-03",
     "BUG-04",
     "BUG-05",
-    "BUG-06"
+    "BUG-06",
+    "BUG-07"
   ],
   "items": [
     {
@@ -52,7 +53,7 @@
     {
       "id": "BUG-07",
       "name": "Fix tab header padding inconsistency",
-      "status": "pending",
+      "status": "complete",
       "description": "The Processes tab header text has no right-side padding, ending right at the pane edge. Add consistent padding on both sides of all tab headers in the left pane."
     }
   ],
