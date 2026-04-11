@@ -1,0 +1,53 @@
+{
+  "name": "ui-bugfixes",
+  "started": "2026-04-11T06:56:06Z",
+  "lastUpdated": "2026-04-11T07:10:00Z",
+  "iterations": 1,
+  "inProgress": null,
+  "completed": ["BUG-01"],
+  "items": [
+    {
+      "id": "BUG-01",
+      "name": "Fix 'Open as new file session' context menu action",
+      "status": "complete",
+      "description": "Right-clicking a file and selecting 'open as new file session' does nothing. It should open a new File Session."
+    },
+    {
+      "id": "BUG-02",
+      "name": "Add inline todo creation with '+' button",
+      "status": "pending",
+      "description": "In the TODO tab in the right pane, add a '+ todo item' input that always appears below the unchecked todo items, allowing inline creation of new todo items."
+    },
+    {
+      "id": "BUG-03",
+      "name": "Fix Claude Usage tracking not starting automatically",
+      "status": "pending",
+      "description": "In the Status tab, Claude Usage gets stuck showing 'Run claude to activate usage tracking'. It should start tracking anytime there is a claude session and the tab is active."
+    },
+    {
+      "id": "BUG-04",
+      "name": "Add Codex Usage tracking to Status tab",
+      "status": "pending",
+      "description": "Add a Codex Usage tracking section to the Status tab in the right pane, styled identically to the Claude Usage tracker."
+    },
+    {
+      "id": "BUG-05",
+      "name": "Fix file deletion ignoring confirmation dialog",
+      "status": "pending",
+      "description": "Right-click 'Delete file' deletes the file immediately regardless of whether OK or Cancel is pressed in the confirmation popup. File should only be deleted when OK is pressed; Cancel should be a no-op."
+    },
+    {
+      "id": "BUG-06",
+      "name": "Add drag-and-drop file moving into subfolders",
+      "status": "pending",
+      "description": "Allow dragging files in the file tab to move them into subfolders. If a file is dragged but not dropped onto a subfolder, it should be a no-op and not change the file order."
+    },
+    {
+      "id": "BUG-07",
+      "name": "Fix tab header padding inconsistency",
+      "status": "pending",
+      "description": "The Processes tab header text has no right-side padding, ending right at the pane edge. Add consistent padding on both sides of all tab headers in the left pane."
+    }
+  ],
+  "notes": {}
+}
